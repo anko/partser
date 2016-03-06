@@ -15,7 +15,7 @@ var seq = P.seq
 var alt = P.alt
 var times = P.times
 var desc = P.desc
-// var mark = P.mark
+var mark = P.mark
 var map = P.map
 
 var parse = P.parse
@@ -117,6 +117,15 @@ test('desc', function (t) {
   t.plan(2)
   parseOk(t, a, 'a', 'a')
   parseFail(t, a, 'b', 0, ['first letter of the alphabet'])
+})
+
+test('mark', function (t) {
+  var aMark = mark(regex(/a*/))
+  t.plan(4)
+  parseOk(t, aMark, '', { value: '', start: 0, end: 0 })
+  parseOk(t, aMark, 'a', { value: 'a', start: 0, end: 1 })
+  parseOk(t, aMark, 'aa', { value: 'aa', start: 0, end: 2 })
+  parseFail(t, aMark, 'b', 0, ['EOF'])
 })
 
 test('map', function (t) {

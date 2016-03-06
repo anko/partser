@@ -136,7 +136,7 @@ Parsimmon.Parser = (function () {
   var seqMap = Parsimmon.seqMap = function () {
     var args = [].slice.call(arguments)
     var mapper = args.pop()
-    return seq.apply(null, args).map(function (results) {
+    return Parsimmon.map(seq.apply(null, args), function (results) {
       return mapper.apply(null, results)
     })
   }
@@ -234,8 +234,8 @@ Parsimmon.Parser = (function () {
     })
   }
 
-  _.mark = function () {
-    return seqMap(index, this, index, function (start, value, end) {
+  Parsimmon.mark = function (parser) {
+    return seqMap(index, parser, index, function (start, value, end) {
       return { start: start, value: value, end: end }
     })
   }
