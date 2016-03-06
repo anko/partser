@@ -14,8 +14,6 @@ Parsimmon.Parser = (function () {
     this._ = action
   }
 
-  var _ = Parser.prototype
-
   function makeSuccess (index, value) {
     return {
       status: true,
@@ -288,7 +286,7 @@ Parsimmon.Parser = (function () {
     })
   }
 
-  var succeed = Parsimmon.succeed = function (value) {
+  Parsimmon.succeed = function (value) {
     return Parser(function (stream, i) {
       return makeSuccess(i, value)
     })
@@ -357,22 +355,9 @@ Parsimmon.Parser = (function () {
     original._ = replacement._
   }
 
-  // fantasyland compat
-
-  // Monoid (Alternative, really)
-  _.concat = _.or
-  _.empty = fail('empty')
-
-  // Applicative
-  _.of = Parser.of = Parsimmon.of = succeed
-
-  _.ap = function (other) {
-    return seqMap(this, other, function (f, x) { return f(x) })
-  }
-
-  // Monad
-  _.chain = function (f) {
-    var self = this
+  Parsimmon.chain = function (parser, f) {
+    assertParser(parser)
+    var self = parser
     return Parser(function (stream, i) {
       var result = self._(stream, i)
       if (!result.status) return result

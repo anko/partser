@@ -17,6 +17,7 @@ var times = P.times
 var desc = P.desc
 var mark = P.mark
 var map = P.map
+var chain = P.chain
 
 var replace = P.replace
 var clone = P.clone
@@ -141,7 +142,7 @@ test('map', function (t) {
 })
 
 test('replace', function (t) {
-  t.plan(3)
+  t.plan(7)
   // Replacement changes the logic of one parser to the that of another.
   var a = string('a')
   var b = string('b')
@@ -164,6 +165,23 @@ test('replace', function (t) {
   replace(a, b)
   replace(b, string('c'))
   parseOk(t, a, 'b', 'b')
+
+  // This also works with `chain`, which dynamically chooses which parser to go
+  // with next, based on the result of the previous.
+  a = string('a')
+  b = string('b')
+  var acbd = chain(alt(a, b), function (result) {
+    if (result.match(/a+/)) {
+      return string('c')
+    } else {
+      return string('d')
+    }
+  })
+  parseOk(t, acbd, 'ac', 'c')
+  parseOk(t, acbd, 'bd', 'd')
+  replace(a, regex(/a+/))
+  parseOk(t, acbd, 'aaac', 'c')
+  parseFail(t, acbd, 'aaad', 3, ["'c'"])
 })
 test('clone', function (t) {
   var a = string('a')
