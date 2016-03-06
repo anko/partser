@@ -14,9 +14,8 @@
   ],
   "main": "index.js",
   "devDependencies": {
-    "chai": "1.5.x",
-    "mocha": "1.8.x",
-    "standard": "^6.0.7"
+    "standard": "^6.0.7",
+    "tape": "^4.5.0"
   },
   "dependencies": {},
   "scripts": {

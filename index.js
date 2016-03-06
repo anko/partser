@@ -91,11 +91,11 @@ Parsimmon.Parser = (function () {
     return 'expected ' + formatExpected(error.expected) + formatGot(stream, error)
   }
 
-  _.parse = function (stream) {
+  Parsimmon.parse = function (parser, stream) {
     if (typeof stream !== 'string') {
       throw new Error('.parse must be called with a string as its argument')
     }
-    var result = this.skip(eof)._(stream, 0)
+    var result = parser.skip(eof)._(stream, 0)
 
     return result.status ? {
       status: true,

@@ -3,7 +3,7 @@ export PATH := $(shell npm bin):$(PATH)
 .PHONY: test
 test: test.js
 	standard
-	mocha -u tdd test.js
+	node test2.js
 
 .PHONY: publish
 publish: test
