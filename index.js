@@ -133,7 +133,7 @@ Parsimmon.Parser = (function () {
     })
   }
 
-  var seqMap = Parsimmon.seqMap = function () {
+  var seqMap = function () {
     var args = [].slice.call(arguments)
     var mapper = args.pop()
     return Parsimmon.map(seq.apply(null, args), function (results) {
