@@ -24,6 +24,8 @@ var clone = P.clone
 
 var parse = P.parse
 
+var formatError = P.formatError
+
 var parseOk = function (t, parser, input, expectedValue) {
   t.deepEquals(parse(parser, input), {
     status: true,
@@ -212,4 +214,13 @@ test('clone', function (t) {
   replace(a, alt(clone(a), string('b')))
   parseOk(t, a, 'a', 'a')
   parseOk(t, a, 'b', 'b')
+})
+
+test('formatError', function (t) {
+  var a = string('a')
+  var source = 'not a'
+  var error = parse(a, source)
+  t.plan(1)
+  t.equals(formatError(source, error),
+      "expected 'a' at character 0, got 'not a'")
 })
