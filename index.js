@@ -327,24 +327,6 @@ Parsimmon.Parser = (function () {
     })
   }
 
-  Parsimmon.oneOf = function (str) {
-    return test(function (ch) { return str.indexOf(ch) >= 0 })
-  }
-
-  Parsimmon.noneOf = function (str) {
-    return test(function (ch) { return str.indexOf(ch) < 0 })
-  }
-
-  Parsimmon.takeWhile = function (predicate) {
-    assertfunction(predicate)
-
-    return Parser(function (stream, i) {
-      var j = i
-      while (j < stream.length && predicate(stream.charAt(j))) j += 1
-      return makeSuccess(j, stream.slice(i, j))
-    })
-  }
-
   Parsimmon.lazy = function (desc, f) {
     if (arguments.length < 2) {
       f = desc
