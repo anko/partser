@@ -16,7 +16,7 @@ var alt = P.alt
 var times = P.times
 // var desc = P.desc
 // var mark = P.mark
-// var map = P.map
+var map = P.map
 
 var parse = P.parse
 
@@ -90,4 +90,13 @@ test('times', function (t) {
   parseOk(t, onceToThrice, 'aa', ['a', 'a'])
   parseOk(t, onceToThrice, 'aaa', ['a', 'a', 'a'])
   parseFail(t, onceToThrice, 'aaaa', 3, ['EOF'])
+})
+
+test('map', function (t) {
+  var abc = map(regex(/[abc]/), function (x) { return x.toUpperCase() })
+  t.plan(4)
+  parseOk(t, abc, 'a', 'A')
+  parseOk(t, abc, 'b', 'B')
+  parseOk(t, abc, 'c', 'C')
+  parseFail(t, abc, 'd', 0, ['/[abc]/'])
 })
