@@ -91,11 +91,15 @@ Parsimmon.Parser = (function () {
     return 'expected ' + formatExpected(error.expected) + formatGot(stream, error)
   }
 
+  var skip = function (parser, next) {
+    return Parsimmon.map(seq(parser, next), function (r) { return r[0] })
+  }
+
   Parsimmon.parse = function (parser, stream) {
     if (typeof stream !== 'string') {
       throw new Error('.parse must be called with a string as its argument')
     }
-    var result = parser.skip(eof)._(stream, 0)
+    var result = skip(parser, eof)._(stream, 0)
 
     return result.status ? {
       status: true,
@@ -144,7 +148,7 @@ Parsimmon.Parser = (function () {
     return Parser(parsingFunction(makeSuccess, makeFailure))
   }
 
-  var alt = Parsimmon.alt = function () {
+  Parsimmon.alt = function () {
     var parsers = [].slice.call(arguments)
     var numParsers = parsers.length
     if (numParsers === 0) return fail('zero alternates')
@@ -161,71 +165,7 @@ Parsimmon.Parser = (function () {
     })
   }
 
-  Parsimmon.sepBy = function (parser, separator) {
-    // Argument asserted by sepBy1
-    return sepBy1(parser, separator).or(Parsimmon.of([]))
-  }
-
-  var sepBy1 = Parsimmon.sepBy1 = function (parser, separator) {
-    assertParser(parser)
-    assertParser(separator)
-
-    var pairs = separator.then(parser).many()
-
-    return parser.chain(function (r) {
-      return pairs.map(function (rs) {
-        return [r].concat(rs)
-      })
-    })
-  }
-
   // -*- primitive combinators -*- //
-  _.or = function (alternative) {
-    return alt(this, alternative)
-  }
-
-  _.then = function (next) {
-    if (typeof next === 'function') {
-      throw new Error('chaining features of .then are no longer supported, use .chain instead')
-    }
-
-    assertParser(next)
-    return seq(this, next).map(function (results) { return results[1] })
-  }
-
-  // -*- optimized iterative combinators -*- //
-  // equivalent to:
-  // _.many = function () {
-  //   return this.times(0, Infinity)
-  // }
-  // or, more explicitly:
-  // _.many = function () {
-  //   var self = this
-  //   return self.then(function (x) {
-  //     return self.many().then(function (xs) {
-  //       return [x].concat(xs)
-  //     })
-  //   }).or(succeed([]))
-  // }
-  _.many = function () {
-    var self = this
-
-    return Parser(function (stream, i) {
-      var accum = []
-      var result
-
-      for (;;) {
-        result = mergeReplies(self._(stream, i), result)
-
-        if (result.status) {
-          i = result.index
-          accum.push(result.value)
-        } else {
-          return mergeReplies(makeSuccess(i, accum), result)
-        }
-      }
-    })
-  }
 
   // equivalent to:
   // _.times = function (min, max) {
@@ -247,10 +187,11 @@ Parsimmon.Parser = (function () {
   //   }
   //   else return succeed([])
   // }
-  _.times = function (min, max) {
-    if (arguments.length < 2) max = min
-    var self = this
+  Parsimmon.times = function (parser, min, max) {
+    if (arguments.length < 3) max = min
+    var self = parser
 
+    assertParser(self)
     assertNumber(min)
     assertNumber(max)
 
@@ -282,27 +223,15 @@ Parsimmon.Parser = (function () {
   }
 
   // -*- higher-level combinators -*- //
-  _.result = function (res) { return this.map(function (_) { return res }) }
-  _.atMost = function (n) { return this.times(0, n) }
-  _.atLeast = function (n) {
-    return seqMap(this.times(n), this.many(), function (init, rest) {
-      return init.concat(rest)
-    })
-  }
-
-  _.map = function (fn) {
+  Parsimmon.map = function (parser, fn) {
     assertfunction(fn)
 
-    var self = this
+    var self = parser
     return Parser(function (stream, i) {
       var result = self._(stream, i)
       if (!result.status) return result
       return mergeReplies(makeSuccess(result.index, fn(result.value)), result)
     })
-  }
-
-  _.skip = function (next) {
-    return seq(this, next).map(function (results) { return results[0] })
   }
 
   _.mark = function () {
@@ -338,7 +267,7 @@ Parsimmon.Parser = (function () {
     })
   }
 
-  var regex = Parsimmon.regex = function (re, group) {
+  Parsimmon.regex = function (re, group) {
     assertRegexp(re)
     if (group) assertNumber(group)
 
@@ -368,13 +297,6 @@ Parsimmon.Parser = (function () {
   var fail = Parsimmon.fail = function (expected) {
     return Parser(function (stream, i) { return makeFailure(i, expected) })
   }
-
-  Parsimmon.letter = regex(/[a-z]/i).desc('a letter')
-  Parsimmon.letters = regex(/[a-z]*/i)
-  Parsimmon.digit = regex(/[0-9]/).desc('a digit')
-  Parsimmon.digits = regex(/[0-9]*/)
-  Parsimmon.whitespace = regex(/\s+/).desc('whitespace')
-  Parsimmon.optWhitespace = regex(/\s*/)
 
   Parsimmon.any = Parser(function (stream, i) {
     if (i >= stream.length) return makeFailure(i, 'any character')

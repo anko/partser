@@ -4,16 +4,19 @@ var P = require('./index')
 var string = P.string
 var regex = P.regex
 var all = P.all
+// var any = P.any
 var eof = P.eof
 var succeed = P.succeed
 var fail = P.fail
 var index = P.index
+// var custom = P.custom
 
-// var seq = P.seq
-// var alt = P.alt
-// var times = P.times
+var seq = P.seq
+var alt = P.alt
+var times = P.times
 // var desc = P.desc
 // var mark = P.mark
+// var map = P.map
 
 var parse = P.parse
 
@@ -40,4 +43,51 @@ test('primitives work', function (t) {
   parseOk(t, succeed('what'), '', 'what')
   parseFail(t, fail('what'), 'a', 0, ['what'])
   parseOk(t, index, '', 0)
+})
+
+test('seq', function (t) {
+  var s = string
+  var abc = seq(s('a'), s('b'), s('c'))
+  t.plan(2)
+  parseOk(t, abc, 'abc', ['a', 'b', 'c'])
+  parseFail(t, abc, 'cba', 0, ["'a'"])
+})
+
+test('alt', function (t) {
+  var s = string
+  var abc = alt(s('a'), s('b'), s('c'))
+  t.plan(4)
+  parseOk(t, abc, 'a', 'a')
+  parseOk(t, abc, 'b', 'b')
+  parseOk(t, abc, 'c', 'c')
+  parseFail(t, abc, 'd', 0, ["'c'", "'b'", "'a'"])
+})
+
+test('times', function (t) {
+  var notAtAll = times(string('a'), 0)
+  var once = times(string('a'), 1)
+  var maybeOnce = times(string('a'), 0, 1)
+  var twice = times(string('a'), 2)
+  var onceToThrice = times(string('a'), 1, 3)
+  t.plan(15)
+
+  parseOk(t, notAtAll, '', [])
+  parseFail(t, notAtAll, 'a', 0, ['EOF'])
+
+  parseOk(t, once, 'a', ['a'])
+  parseFail(t, once, 'aa', 1, ['EOF'])
+
+  parseOk(t, maybeOnce, '', [])
+  parseOk(t, maybeOnce, 'a', ['a'])
+  parseFail(t, maybeOnce, 'aa', 1, ['EOF'])
+
+  parseOk(t, twice, 'aa', ['a', 'a'])
+  parseFail(t, twice, 'a', 1, ["'a'"])
+  parseFail(t, twice, 'aaa', 2, ['EOF'])
+
+  parseFail(t, onceToThrice, '', 0, ["'a'"])
+  parseOk(t, onceToThrice, 'a', ['a'])
+  parseOk(t, onceToThrice, 'aa', ['a', 'a'])
+  parseOk(t, onceToThrice, 'aaa', ['a', 'a', 'a'])
+  parseFail(t, onceToThrice, 'aaaa', 3, ['EOF'])
 })
