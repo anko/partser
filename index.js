@@ -314,7 +314,7 @@ Parsimmon.Parser = (function () {
     return makeSuccess(i, null)
   })
 
-  var test = Parsimmon.test = function (predicate) {
+  Parsimmon.test = function (predicate) {
     assertfunction(predicate)
 
     return Parser(function (stream, i) {
@@ -346,6 +346,16 @@ Parsimmon.Parser = (function () {
   var index = Parsimmon.index = Parser(function (stream, i) {
     return makeSuccess(i, i)
   })
+
+  Parsimmon.clone = function (parser) {
+    return Parsimmon.custom(function () { return parser._ })
+  }
+
+  Parsimmon.replace = function (original, replacement) {
+    assertParser(original)
+    assertParser(replacement)
+    original._ = replacement._
+  }
 
   // fantasyland compat
 

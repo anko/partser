@@ -18,6 +18,9 @@ var desc = P.desc
 var mark = P.mark
 var map = P.map
 
+var replace = P.replace
+var clone = P.clone
+
 var parse = P.parse
 
 var parseOk = function (t, parser, input, expectedValue) {
@@ -135,4 +138,60 @@ test('map', function (t) {
   parseOk(t, abc, 'b', 'B')
   parseOk(t, abc, 'c', 'C')
   parseFail(t, abc, 'd', 0, ['/[abc]/'])
+})
+
+test('replace', function (t) {
+  t.plan(3)
+  // Replacement changes the logic of one parser to the that of another.
+  var a = string('a')
+  var b = string('b')
+  replace(a, b)
+  parseOk(t, a, 'b', 'b')
+
+  // This doesn't change the replaced parser's identity, so its behaviour just
+  // changes in-place wherever it's been used otherwise.
+  a = string('a')
+  b = string('b')
+  var many = times(a, 1, Infinity)
+  replace(a, b)
+  parseOk(t, many, 'bb', ['b', 'b'])
+
+  // A `replace` is one-off: the replacement is by value, not reference.  This
+  // means replacing A with B and later replacing B with C, means A's logic is
+  // still from what B was then, not what it changed to become.
+  a = string('a')
+  b = string('b')
+  replace(a, b)
+  replace(b, string('c'))
+  parseOk(t, a, 'b', 'b')
+})
+test('clone', function (t) {
+  var a = string('a')
+  t.plan(9)
+
+  // Cloning an object creates a parser which has a separate identity but the
+  // same parsing behaviour.
+  t.equal(a, a)
+  t.notEqual(a, clone(a))
+  parseOk(t, a, 'a', 'a')
+  parseOk(t, clone(a), 'a', 'a')
+  // This means you can modify the clone, e.g. by replacing it's logic, without
+  // affecting the original.
+  var b = clone(a)
+  replace(b, string('b'))
+  parseOk(t, b, 'b', 'b') // clone logic altered
+  parseOk(t, a, 'a', 'a') // original still the same
+
+  // Cloning does not preserve object properties.
+  a = string('a')
+  a.hi = 'hello'
+  t.notOk(clone('a').hi)
+
+  // Without cloning the `a` here, one of the branches of the alt would refer
+  // to the alt itself (since that's what `a` is replaced with and cause an
+  // infinite loop when called.
+  a = string('a')
+  replace(a, alt(clone(a), string('b')))
+  parseOk(t, a, 'a', 'a')
+  parseOk(t, a, 'b', 'b')
 })
