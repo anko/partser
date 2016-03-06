@@ -9,7 +9,7 @@ var eof = P.eof
 var succeed = P.succeed
 var fail = P.fail
 var index = P.index
-// var custom = P.custom
+var custom = P.custom
 
 var seq = P.seq
 var alt = P.alt
@@ -34,7 +34,7 @@ var parseFail = function (t, parser, input, index, expected) {
   })
 }
 
-test('primitives work', function (t) {
+test('basic primitives work', function (t) {
   t.plan(9)
   parseOk(t, string('a'), 'a', 'a')
   parseOk(t, regex(/a+/), 'aa', 'aa')
@@ -45,6 +45,24 @@ test('primitives work', function (t) {
   parseOk(t, succeed('what'), '', 'what')
   parseFail(t, fail('what'), 'a', 0, ['what'])
   parseOk(t, index, '', 0)
+})
+
+test('custom', function (t) {
+  var customAny = custom(function (success, failure) {
+    return function (stream, i) {
+      if (stream.length) {
+        return success(i + 1, stream.charAt(i))
+      } else {
+        return failure(i, 'any character')
+      }
+    }
+  })
+  t.plan(4)
+  parseOk(t, customAny, 'a', 'a')
+  parseOk(t, customAny, 'b', 'b')
+  parseFail(t, customAny, '', 0, ['any character'])
+  parseOk(t, map(customAny, function (x) { return x.toUpperCase() }),
+      'a', 'A')
 })
 
 test('seq', function (t) {
