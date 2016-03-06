@@ -240,8 +240,8 @@ Parsimmon.Parser = (function () {
     })
   }
 
-  _.desc = function (expected) {
-    var self = this
+  Parsimmon.desc = function (parser, expected) {
+    var self = parser
     return Parser(function (stream, i) {
       var reply = self._(stream, i)
       if (!reply.status) reply.expected = [expected]

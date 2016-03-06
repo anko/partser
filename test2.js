@@ -14,7 +14,7 @@ var custom = P.custom
 var seq = P.seq
 var alt = P.alt
 var times = P.times
-// var desc = P.desc
+var desc = P.desc
 // var mark = P.mark
 var map = P.map
 
@@ -110,6 +110,13 @@ test('times', function (t) {
   parseOk(t, onceToThrice, 'aa', ['a', 'a'])
   parseOk(t, onceToThrice, 'aaa', ['a', 'a', 'a'])
   parseFail(t, onceToThrice, 'aaaa', 3, ['EOF'])
+})
+
+test('desc', function (t) {
+  var a = desc(string('a'), 'first letter of the alphabet')
+  t.plan(2)
+  parseOk(t, a, 'a', 'a')
+  parseFail(t, a, 'b', 0, ['first letter of the alphabet'])
 })
 
 test('map', function (t) {
