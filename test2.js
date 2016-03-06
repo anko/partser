@@ -4,7 +4,7 @@ var P = require('./index')
 var string = P.string
 var regex = P.regex
 var all = P.all
-// var any = P.any
+var any = P.any
 var eof = P.eof
 var succeed = P.succeed
 var fail = P.fail
@@ -35,10 +35,12 @@ var parseFail = function (t, parser, input, index, expected) {
 }
 
 test('primitives work', function (t) {
-  t.plan(7)
+  t.plan(9)
   parseOk(t, string('a'), 'a', 'a')
   parseOk(t, regex(/a+/), 'aa', 'aa')
   parseOk(t, all, 'aaa', 'aaa')
+  parseOk(t, any, 'a', 'a')
+  parseOk(t, any, 'b', 'b')
   parseOk(t, eof, '', null)
   parseOk(t, succeed('what'), '', 'what')
   parseFail(t, fail('what'), 'a', 0, ['what'])
