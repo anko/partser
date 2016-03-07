@@ -109,6 +109,35 @@ Parsimmon.Parser = (function () {
     }
   }
 
+  Parsimmon.except = function (allowed, forbidden) {
+    assertParser(allowed)
+    assertParser(forbidden)
+    return Parser(function (stream, i) {
+      var forbiddenResult = forbidden._(stream, i)
+      if (forbiddenResult.status) {
+        return makeFailure(i, "something that is not '" +
+            forbiddenResult.value + "'")
+        // This error text is relatively unhelpful, as it only says what was
+        // *not* expected, but this is all we can do.  Parsers only return an
+        // "expected" value when they fail, and this fail branch is only
+        // triggered when the forbidden parser succeeds.  Moreover, a parser's
+        // expected value is not constant: it changes as it consumes more
+        // characters.
+        //
+        // Ensure that it's clear to users that they really should use `desc`
+        // to give instances of this parser a clearer name.
+      } else {
+        var allowedResult = allowed._(stream, i)
+        if (allowedResult.status) {
+          return allowedResult
+        } else {
+          return makeFailure(i, formatExpected(allowedResult.expected) +
+              ' (except ' + formatExpected(forbiddenResult.expected) + ')')
+        }
+      }
+    })
+  }
+
   // [Parser a] -> Parser [a]
   var seq = Parsimmon.seq = function () {
     var parsers = [].slice.call(arguments)

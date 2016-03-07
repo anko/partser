@@ -12,6 +12,7 @@ var fail = P.fail
 var index = P.index
 var custom = P.custom
 
+var except = P.except
 var seq = P.seq
 var alt = P.alt
 var times = P.times
@@ -73,6 +74,14 @@ tape('custom', function (t) {
       'a', 'A')
 })
 
+tape('except', function (t) {
+  t.plan(3)
+  var forbidden = regex(/[abc]/)
+  var okChars = except(any, forbidden)
+  parseFail(t, okChars, 'b', 0, ["something that is not 'b'"])
+  parseFail(t, okChars, '', 0, ['any character (except /[abc]/)'])
+  parseOk(t, okChars, 'x', 'x')
+})
 tape('seq', function (t) {
   var s = string
   var abc = seq(s('a'), s('b'), s('c'))
@@ -146,7 +155,7 @@ tape('map', function (t) {
 })
 
 tape('replace', function (t) {
-  t.plan(7)
+  t.plan(9)
   // Replacement changes the logic of one parser to the that of another.
   var a = string('a')
   var b = string('b')
@@ -186,6 +195,13 @@ tape('replace', function (t) {
   replace(a, regex(/a+/))
   parseOk(t, acbd, 'aaac', 'c')
   parseFail(t, acbd, 'aaad', 3, ["'c'"])
+
+  // This also works with `except`.
+  a = string('a')
+  var anyButA = except(any, a)
+  replace(a, string('b'))
+  parseOk(t, anyButA, 'a', 'a')
+  parseFail(t, anyButA, 'b', 0, ["something that is not 'b'"])
 })
 tape('clone', function (t) {
   var a = string('a')
