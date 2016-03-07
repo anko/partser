@@ -43,9 +43,10 @@ var parseFail = function (t, parser, input, index, expected) {
 }
 
 tape('basic primitives work', function (t) {
-  t.plan(10)
+  t.plan(11)
   parseOk(t, string('a'), 'a', 'a')
   parseOk(t, regex(/a+/), 'aa', 'aa')
+  parseOk(t, regex(/(a+)b/, 1), 'aab', 'aa')
   parseOk(t, all, 'aaa', 'aaa')
   parseOk(t, any, 'a', 'a')
   parseOk(t, any, 'b', 'b')
