@@ -1,10 +1,11 @@
-var test = require('tape')
+var tape = require('tape')
 var P = require('./index')
 
 var string = P.string
 var regex = P.regex
 var all = P.all
 var any = P.any
+var test = P.test
 var eof = P.eof
 var succeed = P.succeed
 var fail = P.fail
@@ -40,20 +41,21 @@ var parseFail = function (t, parser, input, index, expected) {
   })
 }
 
-test('basic primitives work', function (t) {
-  t.plan(9)
+tape('basic primitives work', function (t) {
+  t.plan(10)
   parseOk(t, string('a'), 'a', 'a')
   parseOk(t, regex(/a+/), 'aa', 'aa')
   parseOk(t, all, 'aaa', 'aaa')
   parseOk(t, any, 'a', 'a')
   parseOk(t, any, 'b', 'b')
+  parseOk(t, test(function (x) { return x === 'a' }), 'a', 'a')
   parseOk(t, eof, '', null)
   parseOk(t, succeed('what'), '', 'what')
   parseFail(t, fail('what'), 'a', 0, ['what'])
   parseOk(t, index, '', 0)
 })
 
-test('custom', function (t) {
+tape('custom', function (t) {
   var customAny = custom(function (success, failure) {
     return function (stream, i) {
       if (stream.length) {
@@ -71,7 +73,7 @@ test('custom', function (t) {
       'a', 'A')
 })
 
-test('seq', function (t) {
+tape('seq', function (t) {
   var s = string
   var abc = seq(s('a'), s('b'), s('c'))
   t.plan(2)
@@ -79,7 +81,7 @@ test('seq', function (t) {
   parseFail(t, abc, 'cba', 0, ["'a'"])
 })
 
-test('alt', function (t) {
+tape('alt', function (t) {
   var s = string
   var abc = alt(s('a'), s('b'), s('c'))
   t.plan(4)
@@ -89,7 +91,7 @@ test('alt', function (t) {
   parseFail(t, abc, 'd', 0, ["'c'", "'b'", "'a'"])
 })
 
-test('times', function (t) {
+tape('times', function (t) {
   var notAtAll = times(string('a'), 0)
   var once = times(string('a'), 1)
   var maybeOnce = times(string('a'), 0, 1)
@@ -118,14 +120,14 @@ test('times', function (t) {
   parseFail(t, onceToThrice, 'aaaa', 3, ['EOF'])
 })
 
-test('desc', function (t) {
+tape('desc', function (t) {
   var a = desc(string('a'), 'first letter of the alphabet')
   t.plan(2)
   parseOk(t, a, 'a', 'a')
   parseFail(t, a, 'b', 0, ['first letter of the alphabet'])
 })
 
-test('mark', function (t) {
+tape('mark', function (t) {
   var aMark = mark(regex(/a*/))
   t.plan(4)
   parseOk(t, aMark, '', { value: '', start: 0, end: 0 })
@@ -134,7 +136,7 @@ test('mark', function (t) {
   parseFail(t, aMark, 'b', 0, ['EOF'])
 })
 
-test('map', function (t) {
+tape('map', function (t) {
   var abc = map(regex(/[abc]/), function (x) { return x.toUpperCase() })
   t.plan(4)
   parseOk(t, abc, 'a', 'A')
@@ -143,7 +145,7 @@ test('map', function (t) {
   parseFail(t, abc, 'd', 0, ['/[abc]/'])
 })
 
-test('replace', function (t) {
+tape('replace', function (t) {
   t.plan(7)
   // Replacement changes the logic of one parser to the that of another.
   var a = string('a')
@@ -185,7 +187,7 @@ test('replace', function (t) {
   parseOk(t, acbd, 'aaac', 'c')
   parseFail(t, acbd, 'aaad', 3, ["'c'"])
 })
-test('clone', function (t) {
+tape('clone', function (t) {
   var a = string('a')
   t.plan(9)
 
@@ -216,7 +218,7 @@ test('clone', function (t) {
   parseOk(t, a, 'b', 'b')
 })
 
-test('formatError', function (t) {
+tape('formatError', function (t) {
   var a = string('a')
   var source = 'not a'
   var error = parse(a, source)
