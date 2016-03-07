@@ -146,6 +146,12 @@ identity.  Returns `undefined`.
 Takes a parser and a string, and returns the result of attempting to parse that
 string with that parser.
 
+### `formatError`
+
+Takes an object representing a parse failure and the string input that caused
+it, and produces a human-readable error string stating what went wrong, where
+it went wrong, and what was expected instead.
+
 ## Tips and patterns
 
  - Getting infinite loops and overflowing the stack when replacing a parser
