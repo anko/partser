@@ -19,6 +19,6 @@
   },
   "dependencies": {},
   "scripts": {
-    "test": "make test"
+    "test": "node test.js"
   }
 }
