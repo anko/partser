@@ -19,6 +19,7 @@
   },
   "dependencies": {},
   "scripts": {
-    "test": "node test.js"
+    "test": "node test.js",
+    "test-docs": "txm readme.markdown"
   }
 }
