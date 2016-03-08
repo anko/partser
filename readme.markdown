@@ -65,9 +65,7 @@ Running it produces this:
 Note how the `quote` parser was `replace`'d partway through with a parser that
 accepts `$` instead of `"`, and the change propagates to the `stringParser`.
 
-## How to
-
-### What this exports
+## Usage
 
 Partser gives you functions of a few different types:
 
@@ -75,7 +73,7 @@ Partser gives you functions of a few different types:
    tokens (e.g. `all` or `any`),
  - [*parser constructors*](#parser-constructors) that return new parsers based
    on arguments (e.g.  `string` or `regex`),
- - [*oarser combinators*](#parser-combinators) that take parsers and produce
+ - [*parser combinators*](#parser-combinators) that take parsers and produce
    new parsers that use them (e.g.  `seq` or `map`),
  - [`replace`](#replace), which allows a parser's logic to be changed, and
  - [`parse`](#parse), which performs the actual parsing.
@@ -164,4 +162,4 @@ it went wrong, and what was expected instead.
 
 ## License
 
-MIT.
+[MIT](#LICENSE).
