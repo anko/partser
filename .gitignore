@@ -1,6 +1,2 @@
-/*.tgz
-
+node_modules/
 npm-*.log
-/node_modules
-
-/tmp
