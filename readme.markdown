@@ -7,7 +7,7 @@ different parser.
 This lets you write ridiculously modular parsers that keep your parser
 adaptable and, if necessary, user-modifiable.
 
-## Quick Example
+## Example
 
 For example, suppose you wanted to make a parser that accepts string literals
 like `"hi"` and outputs objects like `{ type: 'string', contents: 'hi' }`.
