@@ -105,7 +105,8 @@ tape('times', function (t) {
   var maybeOnce = times(string('a'), 0, 1)
   var twice = times(string('a'), 2)
   var onceToThrice = times(string('a'), 1, 3)
-  t.plan(15)
+  var asManyAsYouLike = times(string('a'), 0, Infinity)
+  t.plan(17)
 
   parseOk(t, notAtAll, '', [])
   parseFail(t, notAtAll, 'a', 0, ['EOF'])
@@ -126,6 +127,9 @@ tape('times', function (t) {
   parseOk(t, onceToThrice, 'aa', ['a', 'a'])
   parseOk(t, onceToThrice, 'aaa', ['a', 'a', 'a'])
   parseFail(t, onceToThrice, 'aaaa', 3, ['EOF'])
+
+  parseOk(t, asManyAsYouLike, '', [])
+  parseOk(t, asManyAsYouLike, 'aaa', ['a', 'a', 'a'])
 })
 
 tape('desc', function (t) {
