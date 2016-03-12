@@ -24,18 +24,16 @@ var chain = P.chain
 var replace = P.replace
 var clone = P.clone
 
-var parse = P.parse
-
 var formatError = P.formatError
 
 var parseOk = function (t, parser, input, expectedValue) {
-  t.deepEquals(parse(parser, input), {
+  t.deepEquals(parser(input), {
     status: true,
     value: expectedValue
   })
 }
 var parseFail = function (t, parser, input, index, expected) {
-  t.deepEquals(parse(parser, input), {
+  t.deepEquals(parser(input), {
     status: false,
     index: index,
     expected: expected
@@ -238,7 +236,7 @@ tape('clone', function (t) {
 tape('formatError', function (t) {
   var a = string('a')
   var source = 'not a'
-  var error = parse(a, source)
+  var error = a(source)
   t.plan(1)
   t.equals(formatError(source, error),
       "expected 'a' at character 0, got 'not a'")

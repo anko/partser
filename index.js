@@ -1,17 +1,39 @@
 var Partser = {}
 
+var skip = function (parser, next) {
+  return Partser.map(Partser.seq(parser, next), function (r) { return r[0] })
+}
+
+var parse = function (parser, stream) {
+  if (typeof stream !== 'string') {
+    throw new Error('.parse must be called with a string as its argument')
+  }
+  var result = skip(parser, Partser.eof)._(stream, 0)
+
+  return result.status ? {
+    status: true,
+    value: result.value
+  } : {
+    status: false,
+    index: result.furthest,
+    expected: result.expected
+  }
+}
+
 Partser.Parser = (function () {
   'use strict'
 
-  // The Parser object is a wrapper for a parser function.
-  // Externally, you use one to parse a string by calling
-  //   var result = SomeParser.parse('Me Me Me! Parse Me!')
-  // You should never call the constructor, rather you should
-  // construct your Parser from the base parsers and the
-  // parser combinator methods.
+  // Base parser constructor.
+  //
+  // This just returns a callable parsing function with a `_` property that
+  // implements the parsing logic. That way, the `_` property can be changed
+  // without affecting the parser object's identity.
   function Parser (action) {
-    if (!(this instanceof Parser)) return new Parser(action)
-    this._ = action
+    var instance = function (stream) {
+      return parse(instance, stream)
+    }
+    instance._ = action
+    return instance
   }
 
   function makeSuccess (index, value) {
@@ -53,7 +75,7 @@ Partser.Parser = (function () {
 
   // For ensuring we have the right argument types
   function assertParser (p) {
-    if (!(p instanceof Parser)) throw new Error('not a parser: ' + p)
+    if (typeof p._ !== 'function') throw new Error('not a parser: ' + p)
   }
   function assertNumber (x) {
     if (typeof x !== 'number') throw new Error('not a number: ' + x)
@@ -87,26 +109,6 @@ Partser.Parser = (function () {
 
   Partser.formatError = function (stream, error) {
     return 'expected ' + formatExpected(error.expected) + formatGot(stream, error)
-  }
-
-  var skip = function (parser, next) {
-    return Partser.map(seq(parser, next), function (r) { return r[0] })
-  }
-
-  Partser.parse = function (parser, stream) {
-    if (typeof stream !== 'string') {
-      throw new Error('.parse must be called with a string as its argument')
-    }
-    var result = skip(parser, eof)._(stream, 0)
-
-    return result.status ? {
-      status: true,
-      value: result.value
-    } : {
-      status: false,
-      index: result.furthest,
-      expected: result.expected
-    }
   }
 
   Partser.except = function (allowed, forbidden) {
@@ -335,7 +337,7 @@ Partser.Parser = (function () {
     return makeSuccess(stream.length, stream.slice(i))
   })
 
-  var eof = Partser.eof = Parser(function (stream, i) {
+  Partser.eof = Parser(function (stream, i) {
     if (i < stream.length) return makeFailure(i, 'EOF')
 
     return makeSuccess(i, null)

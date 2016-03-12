@@ -44,13 +44,13 @@ var stringParser = p.map(
   })
 
 // Use it to parse something
-console.log(p.parse(stringParser, '"hi"'))
+console.log(stringParser('"hi"'))
 
 // Use single quotes instead
 p.replace(quote, p.string("$"))
 
 // The change propagates to everything that calls the `quote` parser.
-console.log(p.parse(stringParser, '$hi$'))
+console.log(stringParser('$hi$'))
 ```
 
 Running it produces this:
@@ -76,7 +76,6 @@ Partser gives you functions of a few different types:
  - [*parser combinators*](#parser-combinators) that take parsers and produce
    new parsers that use them (e.g.  `seq` or `map`),
  - [`replace`](#replace), which allows a parser's logic to be changed, and
- - [`parse`](#parse), which performs the actual parsing.
 
 Together these can be used to express how to turn text into a data structure.
 
@@ -89,6 +88,11 @@ Together these can be used to express how to turn text into a data structure.
  - `fail`: Always fails.
  - `index`: Consumes no input.  Returns an integer representing the number of
    characters that have been consumed from the input so far.  Always succeeds.
+
+A parser is a function that can be called with a string to return a `{
+status::Boolean, value::Any }`-object.  Don't touch their `_`-property, or
+assume anything about what it is or does.  Feel free to assign other properties,
+but don't expect `clone` to copy them.
 
 ### Parser constructors
 
@@ -132,17 +136,13 @@ Together these can be used to express how to turn text into a data structure.
    given parser, then calls the given function with its result.  That function
    is expected to return a parser, which match result is returned.
  - `clone`: Takes a parser.  Returns a parser with identical logic to the given
-   parser, but a distinct object identity.
+   parser, but a distinct object identity.  Does not copy any properties
+   assigned to the parser!
 
 ### `replace`
 
 Switches a parser's logic for that of another one, without affecting either's
 identity.  Returns `undefined`.
-
-### `parse`
-
-Takes a parser and a string, and returns the result of attempting to parse that
-string with that parser.
 
 ### `formatError`
 
