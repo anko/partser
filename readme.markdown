@@ -23,7 +23,7 @@ sed '1s/.*/var p = require(".\\/index");/' \
 <!-- !test in quick example -->
 
 ``` js
-var p = require('parshimmon')
+var p = require('partser')
 // Construct a string parser
 var quote = p.string('"')
 var stringChar = p.except(p.any, quote)
