@@ -237,6 +237,23 @@ tape('clone', function (t) {
   parseOk(t, a, 'b', 'b')
 })
 
+tape('self-reference', function (t) {
+  var parenOpen = string('(')
+  var parenClose = string(')')
+  var list = fail('defined later')
+  replace(list,
+      times(map(
+          seq(parenOpen, list, parenClose),
+          function (x) { return { v: x[1] } }),
+        0, Infinity))
+
+  t.plan(3)
+
+  parseOk(t, list, '()', [ {v: []} ])
+  parseOk(t, list, '()()', [ {v: []}, {v: []} ])
+  parseOk(t, list, '(())', [ {v: [ {v: []} ]} ])
+})
+
 tape('formatError', function (t) {
   var a = string('a')
   var source = 'not a'
