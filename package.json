@@ -1,8 +1,13 @@
 {
   "name": "partser",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "parser library for extremely modular parsers",
-  "keywords": [ "parser", "modular", "parser combinator", "sub-parser" ],
+  "keywords": [
+    "parser",
+    "modular",
+    "parser combinator",
+    "sub-parser"
+  ],
   "author": "Antti Korpi <an@cyan.io>",
   "contributors": [
     "Jeanine Adkisson <jneen at jneen dot net>"
