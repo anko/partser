@@ -158,7 +158,7 @@ tape('map', function (t) {
 })
 
 tape('replace', function (t) {
-  t.plan(9)
+  t.plan(7)
   // Replacement changes the logic of one parser to the that of another.
   var a = string('a')
   var b = string('b')
@@ -198,14 +198,50 @@ tape('replace', function (t) {
   replace(a, regex(/a+/))
   parseOk(t, acbd, 'aaac', 'c')
   parseFail(t, acbd, 'aaad', 3, ["'c'"])
+})
 
-  // This also works with `except`.
-  a = string('a')
+tape('replace with except', function (t) {
+  t.plan(2)
+  var a = string('a')
   var anyButA = except(any, a)
   replace(a, string('b'))
   parseOk(t, anyButA, 'a', 'a')
   parseFail(t, anyButA, 'b', 0, ["something that is not 'b'"])
 })
+
+tape('replace with alt', function (t) {
+  t.plan(3)
+  var a = fail('defined later')
+  var b = string('b')
+  var aOrB = alt(a, b)
+  replace(a, map(string('c'), function () { return 'hi' }))
+  parseOk(t, aOrB, 'b', 'b')
+  parseOk(t, aOrB, 'c', 'hi')
+  parseFail(t, aOrB, 'a', 0, ["'b'", "'c'"])
+})
+
+tape('replace with alt', function (t) {
+  var listParserLater = fail('implemented later')
+  var expression = alt(
+    listParserLater,
+    string('a'))
+
+  var between = function (p, before, after) {
+    return map(seq(before, p, after), function (r) { return r[1] })
+  }
+
+  var listOpener = string('(')
+  var listTerminator = string(')')
+
+  var listContent = desc(times(expression, 0, Infinity), 'list content')
+  var list = between(listContent, listOpener, listTerminator)
+  replace(listParserLater, list)
+
+  t.plan(2)
+  parseOk(t, expression, 'a', 'a')
+  parseOk(t, expression, '()', [])
+})
+
 tape('clone', function (t) {
   var a = string('a')
   t.plan(9)
