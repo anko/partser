@@ -1,6 +1,6 @@
-var Parsimmon = {}
+var Partser = {}
 
-Parsimmon.Parser = (function () {
+Partser.Parser = (function () {
   'use strict'
 
   // The Parser object is a wrapper for a parser function.
@@ -85,15 +85,15 @@ Parsimmon.Parser = (function () {
     return ' at character ' + i + ', got ' + prefix + stream.slice(i, i + 12) + suffix
   }
 
-  Parsimmon.formatError = function (stream, error) {
+  Partser.formatError = function (stream, error) {
     return 'expected ' + formatExpected(error.expected) + formatGot(stream, error)
   }
 
   var skip = function (parser, next) {
-    return Parsimmon.map(seq(parser, next), function (r) { return r[0] })
+    return Partser.map(seq(parser, next), function (r) { return r[0] })
   }
 
-  Parsimmon.parse = function (parser, stream) {
+  Partser.parse = function (parser, stream) {
     if (typeof stream !== 'string') {
       throw new Error('.parse must be called with a string as its argument')
     }
@@ -109,7 +109,7 @@ Parsimmon.Parser = (function () {
     }
   }
 
-  Parsimmon.except = function (allowed, forbidden) {
+  Partser.except = function (allowed, forbidden) {
     assertParser(allowed)
     assertParser(forbidden)
     return Parser(function (stream, i) {
@@ -139,7 +139,7 @@ Parsimmon.Parser = (function () {
   }
 
   // [Parser a] -> Parser [a]
-  var seq = Parsimmon.seq = function () {
+  var seq = Partser.seq = function () {
     var parsers = [].slice.call(arguments)
     var numParsers = parsers.length
 
@@ -163,7 +163,7 @@ Parsimmon.Parser = (function () {
   var seqMap = function () {
     var args = [].slice.call(arguments)
     var mapper = args.pop()
-    return Parsimmon.map(seq.apply(null, args), function (results) {
+    return Partser.map(seq.apply(null, args), function (results) {
       return mapper.apply(null, results)
     })
   }
@@ -171,11 +171,11 @@ Parsimmon.Parser = (function () {
   /**
    * Allows to add custom primitive parsers
    */
-  Parsimmon.custom = function (parsingFunction) {
+  Partser.custom = function (parsingFunction) {
     return Parser(parsingFunction(makeSuccess, makeFailure))
   }
 
-  Parsimmon.alt = function () {
+  Partser.alt = function () {
     var parsers = [].slice.call(arguments)
     var numParsers = parsers.length
     if (numParsers === 0) return fail('zero alternates')
@@ -214,7 +214,7 @@ Parsimmon.Parser = (function () {
   //   }
   //   else return succeed([])
   // }
-  Parsimmon.times = function (parser, min, max) {
+  Partser.times = function (parser, min, max) {
     if (arguments.length < 3) max = min
     var self = parser
 
@@ -250,7 +250,7 @@ Parsimmon.Parser = (function () {
   }
 
   // -*- higher-level combinators -*- //
-  Parsimmon.map = function (parser, fn) {
+  Partser.map = function (parser, fn) {
     assertfunction(fn)
 
     var self = parser
@@ -261,13 +261,13 @@ Parsimmon.Parser = (function () {
     })
   }
 
-  Parsimmon.mark = function (parser) {
+  Partser.mark = function (parser) {
     return seqMap(index, parser, index, function (start, value, end) {
       return { start: start, value: value, end: end }
     })
   }
 
-  Parsimmon.desc = function (parser, expected) {
+  Partser.desc = function (parser, expected) {
     var self = parser
     return Parser(function (stream, i) {
       var reply = self._(stream, i)
@@ -277,7 +277,7 @@ Parsimmon.Parser = (function () {
   }
 
   // -*- primitive parsers -*- //
-  Parsimmon.string = function (str) {
+  Partser.string = function (str) {
     var len = str.length
     var expected = "'" + str + "'"
 
@@ -294,7 +294,7 @@ Parsimmon.Parser = (function () {
     })
   }
 
-  Parsimmon.regex = function (re, group) {
+  Partser.regex = function (re, group) {
     assertRegexp(re)
     if (group) assertNumber(group)
 
@@ -315,33 +315,33 @@ Parsimmon.Parser = (function () {
     })
   }
 
-  Parsimmon.succeed = function (value) {
+  Partser.succeed = function (value) {
     return Parser(function (stream, i) {
       return makeSuccess(i, value)
     })
   }
 
-  var fail = Parsimmon.fail = function (expected) {
+  var fail = Partser.fail = function (expected) {
     return Parser(function (stream, i) { return makeFailure(i, expected) })
   }
 
-  Parsimmon.any = Parser(function (stream, i) {
+  Partser.any = Parser(function (stream, i) {
     if (i >= stream.length) return makeFailure(i, 'any character')
 
     return makeSuccess(i + 1, stream.charAt(i))
   })
 
-  Parsimmon.all = Parser(function (stream, i) {
+  Partser.all = Parser(function (stream, i) {
     return makeSuccess(stream.length, stream.slice(i))
   })
 
-  var eof = Parsimmon.eof = Parser(function (stream, i) {
+  var eof = Partser.eof = Parser(function (stream, i) {
     if (i < stream.length) return makeFailure(i, 'EOF')
 
     return makeSuccess(i, null)
   })
 
-  Parsimmon.test = function (predicate) {
+  Partser.test = function (predicate) {
     assertfunction(predicate)
 
     return Parser(function (stream, i) {
@@ -354,7 +354,7 @@ Parsimmon.Parser = (function () {
     })
   }
 
-  Parsimmon.lazy = function (desc, f) {
+  Partser.lazy = function (desc, f) {
     if (arguments.length < 2) {
       f = desc
       desc = undefined
@@ -370,21 +370,21 @@ Parsimmon.Parser = (function () {
     return parser
   }
 
-  var index = Parsimmon.index = Parser(function (stream, i) {
+  var index = Partser.index = Parser(function (stream, i) {
     return makeSuccess(i, i)
   })
 
-  Parsimmon.clone = function (parser) {
-    return Parsimmon.custom(function () { return parser._ })
+  Partser.clone = function (parser) {
+    return Partser.custom(function () { return parser._ })
   }
 
-  Parsimmon.replace = function (original, replacement) {
+  Partser.replace = function (original, replacement) {
     assertParser(original)
     assertParser(replacement)
     original._ = replacement._
   }
 
-  Parsimmon.chain = function (parser, f) {
+  Partser.chain = function (parser, f) {
     assertParser(parser)
     var self = parser
     return Parser(function (stream, i) {
@@ -397,5 +397,5 @@ Parsimmon.Parser = (function () {
 
   return Parser
 })()
-module.exports = Parsimmon
+module.exports = Partser
 
