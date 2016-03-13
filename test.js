@@ -10,6 +10,7 @@ var eof = P.eof
 var succeed = P.succeed
 var fail = P.fail
 var index = P.index
+var lcIndex = P.lcIndex
 var custom = P.custom
 
 var except = P.except
@@ -41,7 +42,7 @@ var parseFail = function (t, parser, input, index, expected) {
 }
 
 tape('basic primitives work', function (t) {
-  t.plan(11)
+  t.plan(12)
   parseOk(t, string('a'), 'a', 'a')
   parseOk(t, regex(/a+/), 'aa', 'aa')
   parseOk(t, regex(/(a+)b/, 1), 'aab', 'aa')
@@ -53,6 +54,7 @@ tape('basic primitives work', function (t) {
   parseOk(t, succeed('what'), '', 'what')
   parseFail(t, fail('what'), 'a', 0, ['what'])
   parseOk(t, index, '', 0)
+  parseOk(t, lcIndex, '', { line: 1, column: 1, offset: 0 })
 })
 
 tape('custom', function (t) {

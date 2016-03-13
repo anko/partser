@@ -376,6 +376,23 @@ Partser.Parser = (function () {
     return makeSuccess(i, i)
   })
 
+  Partser.lcIndex = Parser(function (stream, i) {
+    // Like the usual `index` function, but emitting an object that contains
+    // line and column indices in addition to the character-based one.
+
+    var lines = stream.slice(0, i).split('\n')
+
+    // Unlike the character offset, lines and columns are 1-based.
+    var lineWeAreUpTo = lines.length
+    var columnWeAreUpTo = lines[lines.length - 1].length + 1
+
+    return makeSuccess(i, {
+      offset: i,
+      line: lineWeAreUpTo,
+      column: columnWeAreUpTo
+    })
+  })
+
   Partser.clone = function (parser) {
     return Partser.custom(function () { return parser._ })
   }

@@ -86,8 +86,12 @@ Together these can be used to express how to turn text into a data structure.
  - `eof`: Matches the end of input and returns null.
  - `succeed`: Always succeeds and returns null.
  - `fail`: Always fails.
- - `index`: Consumes no input.  Returns an integer representing the number of
-   characters that have been consumed from the input so far.  Always succeeds.
+ - `index`: Consumes no input.  Returns a 0-based integer representing the
+   number of characters that have been consumed from the input so far.  Always
+   succeeds.
+ - `lcIndex`: Consumes no input.  Returns an object with integer fields `line`
+   (1-based), `column` (1-based) and character `offset` (0-based), which
+   represents how much input has been consumed so far.  Always succeeds.
 
 A parser is a function that can be called with a string to return a `{
 status::Boolean, value::Any }`-object.  Don't touch their `_`-property, or
