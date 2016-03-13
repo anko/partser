@@ -136,6 +136,11 @@ but don't expect `clone` to copy them.
    parser, but instead returns an object of the form `{ value :
    whateverItReturned, start: Number, end: Number }` where `start` and `end`
    denote where in the input the match appeared.
+ - `lcMark`: Takes a parser.  Returns a parser that works the same as the given
+   parser, but instead returns an object, which `value` is what that parser
+   returned, and `start` and `end` are objects with `offset`, `line` and
+   `column` properties, just like `lcIndex` returns, which denote where in the
+   input the match appeared.
  - `chain`: Takes a parser and a function.  Returns a parser that matches the
    given parser, then calls the given function with its result.  That function
    is expected to return a parser, which match result is returned.

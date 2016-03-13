@@ -269,6 +269,12 @@ Partser.Parser = (function () {
     })
   }
 
+  Partser.lcMark = function (parser) {
+    return seqMap(lcIndex, parser, lcIndex, function (start, value, end) {
+      return { start: start, value: value, end: end }
+    })
+  }
+
   Partser.desc = function (parser, expected) {
     var self = parser
     return Parser(function (stream, i) {
@@ -376,7 +382,7 @@ Partser.Parser = (function () {
     return makeSuccess(i, i)
   })
 
-  Partser.lcIndex = Parser(function (stream, i) {
+  var lcIndex = Partser.lcIndex = Parser(function (stream, i) {
     // Like the usual `index` function, but emitting an object that contains
     // line and column indices in addition to the character-based one.
 

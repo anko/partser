@@ -19,6 +19,7 @@ var alt = P.alt
 var times = P.times
 var desc = P.desc
 var mark = P.mark
+var lcMark = P.lcMark
 var map = P.map
 var chain = P.chain
 
@@ -147,6 +148,27 @@ tape('mark', function (t) {
   parseOk(t, aMark, '', { value: '', start: 0, end: 0 })
   parseOk(t, aMark, 'a', { value: 'a', start: 0, end: 1 })
   parseOk(t, aMark, 'aa', { value: 'aa', start: 0, end: 2 })
+  parseFail(t, aMark, 'b', 0, ['EOF'])
+})
+
+tape('lcMark', function (t) {
+  var aMark = lcMark(regex(/[a\n]*/))
+  t.plan(4)
+  parseOk(t, aMark, '', {
+    value: '',
+    start: { offset: 0, line: 1, column: 1 },
+    end: { offset: 0, line: 1, column: 1 }
+  })
+  parseOk(t, aMark, 'a', {
+    value: 'a',
+    start: { offset: 0, line: 1, column: 1 },
+    end: { offset: 1, line: 1, column: 2 }
+  })
+  parseOk(t, aMark, 'a\na', {
+    value: 'a\na',
+    start: { offset: 0, line: 1, column: 1 },
+    end: { offset: 3, line: 2, column: 2 }
+  })
   parseFail(t, aMark, 'b', 0, ['EOF'])
 })
 
