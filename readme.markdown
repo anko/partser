@@ -1,4 +1,4 @@
-# partser ![](https://img.shields.io/npm/v/partser.svg?style=flat-square) ![](https://img.shields.io/travis/anko/partser.svg?style=flat-square) ![](https://img.shields.io/david/anko/partser.svg?style=flat-square)
+# partser [![](https://img.shields.io/npm/v/partser.svg?style=flat-square)](https://www.npmjs.com/package/partser) [![](https://img.shields.io/travis/anko/partser.svg?style=flat-square)](https://travis-ci.org/anko/partser) [![](https://img.shields.io/david/anko/partser.svg?style=flat-square)](https://david-dm.org/anko/partser)
 
 Partser is a library for writing parsers that are made of parts that are also
 parsers.  The user can switch out any parser part's behaviour for that of a
