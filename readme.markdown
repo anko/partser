@@ -46,7 +46,7 @@ var stringParser = p.map(
 // Use it to parse something
 console.log(stringParser('"hi"'))
 
-// Use single quotes instead
+// Use dollar signs as quotes instead
 p.replace(quote, p.string("$"))
 
 // The change propagates to everything that calls the `quote` parser.
