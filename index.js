@@ -423,4 +423,3 @@ Partser.Parser = (function () {
   return Parser
 })()
 module.exports = Partser
-
