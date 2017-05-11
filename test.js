@@ -181,6 +181,19 @@ tape('map', function (t) {
   t.end()
 })
 
+tape('chain', function (t) {
+  var a = regex(/[as]/)
+  var weapon = chain(a, function (result) {
+    switch (result) {
+      case 'a' : return map(string('xe'), function (x) { return result + x })
+      case 's' : return map(string('pear'), function (x) { return result + x })
+    }
+  })
+  parseOk(t, weapon, 'axe', 'axe')
+  parseOk(t, weapon, 'spear', 'spear')
+  t.end()
+})
+
 tape('replace', function (t) {
   // Replacement changes the logic of one parser to the that of another.
   var a = string('a')
