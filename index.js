@@ -1,13 +1,30 @@
 var Partser = {}
 
+// For ensuring we have the right argument types
+function assertParser (p) {
+  if (typeof p._ !== 'function') throw new Error('not a parser: ' + p)
+}
+function assertNumber (x) {
+  if (typeof x !== 'number') throw new Error('not a number: ' + x)
+}
+function assertRegexp (x) {
+  if (!(x instanceof RegExp)) throw new Error('not a regex: ' + x)
+}
+function assertfunction (x) {
+  if (typeof x !== 'function') throw new Error('not a function: ' + x)
+}
+function assertString (x) {
+  if (typeof x !== 'string') throw new Error('not a string: ' + x)
+}
+
 var skip = function (parser, next) {
   return Partser.map(Partser.seq(parser, next), function (r) { return r[0] })
 }
 
 var parse = function (parser, stream) {
-  if (typeof stream !== 'string') {
-    throw new Error('.parse must be called with a string as its argument')
-  }
+  assertParser(parser)
+  assertString(stream)
+
   var result = skip(parser, Partser.eof)._(stream, 0)
 
   return result.status ? {
@@ -71,23 +88,6 @@ Partser.Parser = (function () {
       furthest: last.furthest,
       expected: expected
     }
-  }
-
-  // For ensuring we have the right argument types
-  function assertParser (p) {
-    if (typeof p._ !== 'function') throw new Error('not a parser: ' + p)
-  }
-  function assertNumber (x) {
-    if (typeof x !== 'number') throw new Error('not a number: ' + x)
-  }
-  function assertRegexp (x) {
-    if (!(x instanceof RegExp)) throw new Error('not a regex: ' + x)
-  }
-  function assertfunction (x) {
-    if (typeof x !== 'function') throw new Error('not a function: ' + x)
-  }
-  function assertString (x) {
-    if (typeof x !== 'string') throw new Error('not a string: ' + x)
   }
 
   function formatExpected (expected) {
