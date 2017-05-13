@@ -42,18 +42,45 @@ var parseFail = function (t, parser, input, index, expected) {
   })
 }
 
-tape('basic primitives work', function (t) {
+tape('string', function (t) {
   parseOk(t, string('a'), 'a', 'a')
+  t.end()
+})
+tape('regex', function (t) {
   parseOk(t, regex(/a+/), 'aa', 'aa')
   parseOk(t, regex(/(a+)b/, 1), 'aab', 'aa')
+  t.end()
+})
+tape('all', function (t) {
   parseOk(t, all, 'aaa', 'aaa')
+  t.end()
+})
+tape('any', function (t) {
   parseOk(t, any, 'a', 'a')
   parseOk(t, any, 'b', 'b')
+  t.end()
+})
+tape('test', function (t) {
   parseOk(t, test(function (x) { return x === 'a' }), 'a', 'a')
+  t.end()
+})
+tape('eof', function (t) {
   parseOk(t, eof, '', null)
+  t.end()
+})
+tape('succeed', function (t) {
   parseOk(t, succeed('what'), '', 'what')
+  t.end()
+})
+tape('fail', function (t) {
   parseFail(t, fail('what'), 'a', 0, ['what'])
+  t.end()
+})
+tape('index', function (t) {
   parseOk(t, index, '', 0)
+  t.end()
+})
+tape('lcIndex', function (t) {
   parseOk(t, lcIndex, '', { line: 1, column: 1, offset: 0 })
   t.end()
 })
