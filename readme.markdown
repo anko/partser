@@ -58,8 +58,12 @@ Running it produces this:
 <!-- !test out quick example -->
 
 ```
-{ status: true, value: { type: 'string', contents: 'hi' } }
-{ status: true, value: { type: 'string', contents: 'hi' } }
+{ status: true,
+  index: 4,
+  value: { type: 'string', contents: 'hi' } }
+{ status: true,
+  index: 4,
+  value: { type: 'string', contents: 'hi' } }
 ```
 
 Note how the `quote` parser was `replace`'d partway through with a parser that
@@ -78,6 +82,22 @@ Partser gives you functions of a few different types:
  - [`replace`](#replace), which allows a parser's logic to be changed, and
 
 Together these can be used to express how to turn text into a data structure.
+
+When any is called with a string argument (and optionally an offset from which
+to begin), it will return an object with these fields:
+
+ - `status`: a Boolean representing whether the parse succeeded (`true`) or
+   failed (`false`).
+ - `value`:
+   - **If successful**, the return value of the parse.
+   - **If failed**, an array of strings representing what input would have been
+     expected at the point in the input that the parse failed.
+ - `index`:
+   - **If successful**, the point in the stream that the parse succeeded at.
+     (Probably only useful for advanced users writing custom parser primitives
+     that maybe called by other parsers.)
+   - **If failed**, the furthest that the parser managed to match before
+     encountering a dead end.
 
 ### Primitive parsers
 

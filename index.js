@@ -25,16 +25,7 @@ var parse = function (parser, stream) {
   assertParser(parser)
   assertString(stream)
 
-  var result = skip(parser, Partser.eof)._(stream, 0)
-
-  return result.status ? {
-    status: true,
-    value: result.value
-  } : {
-    status: false,
-    index: result.furthest,
-    expected: result.expected
-  }
+  return skip(parser, Partser.eof)._(stream, 0)
 }
 
 Partser.Parser = (function () {
@@ -57,38 +48,44 @@ Partser.Parser = (function () {
     return {
       status: true,
       index: index,
-      value: value,
-      furthest: -1,
-      expected: []
+      value: value
     }
   }
 
   function makeFailure (index, expected) {
     return {
       status: false,
-      index: -1,
-      value: null,
-      furthest: index,
-      expected: [expected]
+      index: index,
+      value: [expected]
     }
   }
 
-  function mergeReplies (result, last) {
-    if (!last) return result
-    if (result.furthest > last.furthest) return result
-
-    var expected = (result.furthest === last.furthest)
-      ? result.expected.concat(last.expected)
-      : last.expected
-
-    return {
-      status: result.status,
-      index: result.index,
-      value: result.value,
-      furthest: last.furthest,
-      expected: expected
+  var mergeReplies = (function () {
+    function furthest (result) {
+      if (result.status) return -1
+      else return result.index
     }
-  }
+
+    function expected (result) {
+      if (result.status) return []
+      else return result.value
+    }
+
+    return function (result, last) {
+      if (!last) return result
+      if (furthest(result) > furthest(last)) return result
+
+      var expectedValue = (furthest(result) === furthest(last))
+        ? expected(result).concat(expected(last))
+        : expected(last)
+
+      return {
+        status: result.status,
+        index: result.index,
+        value: result.status ? result.value : expectedValue
+      }
+    }
+  })()
 
   function formatExpected (expected) {
     if (expected.length === 1) return expected[0]
@@ -108,7 +105,7 @@ Partser.Parser = (function () {
   }
 
   Partser.formatError = function (stream, error) {
-    return 'expected ' + formatExpected(error.expected) + formatGot(stream, error)
+    return 'expected ' + formatExpected(error.value) + formatGot(stream, error)
   }
 
   Partser.except = function (allowed, forbidden) {
@@ -133,8 +130,8 @@ Partser.Parser = (function () {
         if (allowedResult.status) {
           return allowedResult
         } else {
-          return makeFailure(i, formatExpected(allowedResult.expected) +
-              ' (except ' + formatExpected(forbiddenResult.expected) + ')')
+          return makeFailure(i, formatExpected(allowedResult.value) +
+              ' (except ' + formatExpected(forbiddenResult.value) + ')')
         }
       }
     })
@@ -279,7 +276,7 @@ Partser.Parser = (function () {
     var self = parser
     return Parser(function (stream, i) {
       var reply = self._(stream, i)
-      if (!reply.status) reply.expected = [expected]
+      if (!reply.status) reply.value = [expected]
       return reply
     })
   }

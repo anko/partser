@@ -42,14 +42,15 @@ var formatError = P.formatError
 var parseOk = function (t, parser, input, expectedValue) {
   t.deepEquals(parser(input), {
     status: true,
-    value: expectedValue
+    value: expectedValue,
+    index: input.length
   })
 }
 var parseFail = function (t, parser, input, index, expected) {
   t.deepEquals(parser(input), {
     status: false,
-    index: index,
-    expected: expected
+    value: expected,
+    index: index
   })
 }
 
@@ -89,7 +90,7 @@ tape('index', function (t) {
 tape('lcIndex', function (t) {
   parseOk(t, lcIndex, '', { line: 1, column: 1, offset: 0 })
 })
-tape('custom', function (t) {
+tape('custom `any` parser', function (t) {
   var customAny = custom(function (success, failure) {
     return function (stream, i) {
       var remainingStream = stream.slice(i)
