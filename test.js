@@ -92,7 +92,8 @@ tape('lcIndex', function (t) {
 tape('custom', function (t) {
   var customAny = custom(function (success, failure) {
     return function (stream, i) {
-      if (stream.length) {
+      var remainingStream = stream.slice(i)
+      if (remainingStream.length) {
         return success(i + 1, stream.charAt(i))
       } else {
         return failure(i, 'any character')
@@ -101,6 +102,7 @@ tape('custom', function (t) {
   })
   parseOk(t, customAny, 'a', 'a')
   parseOk(t, customAny, 'b', 'b')
+  parseFail(t, seq(string('x'), customAny), 'x', 1, ['any character'])
   parseFail(t, customAny, '', 0, ['any character'])
   parseOk(t, map(customAny, function (x) { return x.toUpperCase() }),
       'a', 'A')
