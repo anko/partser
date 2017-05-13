@@ -21,13 +21,6 @@ var skip = function (parser, next) {
   return Partser.map(Partser.seq(parser, next), function (r) { return r[0] })
 }
 
-var parse = function (parser, stream) {
-  assertParser(parser)
-  assertString(stream)
-
-  return skip(parser, Partser.eof)._(stream, 0)
-}
-
 Partser.Parser = (function () {
   'use strict'
 
@@ -37,8 +30,12 @@ Partser.Parser = (function () {
   // implements the parsing logic. That way, the `_` property can be changed
   // without affecting the parser object's identity.
   function Parser (action) {
-    var instance = function (stream) {
-      return parse(instance, stream)
+    // This is the external interface to any parser.
+    var instance = function (stream, offset) {
+      offset = offset || 0
+      assertString(stream)
+
+      return skip(instance, Partser.eof)._(stream, offset)
     }
     instance._ = action
     return instance

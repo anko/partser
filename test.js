@@ -109,6 +109,18 @@ tape('custom `any` parser', function (t) {
       'a', 'A')
 })
 
+tape('custom parser that just calls `any`', function (t) {
+  var customAny = custom(function (success, failure) {
+    return function (stream, i) { return any(stream, i) }
+  })
+  parseOk(t, customAny, 'a', 'a')
+  parseOk(t, customAny, 'b', 'b')
+  parseFail(t, seq(string('x'), customAny), 'x', 1, ['any character'])
+  parseFail(t, customAny, '', 0, ['any character'])
+  parseOk(t, map(customAny, function (x) { return x.toUpperCase() }),
+      'a', 'A')
+})
+
 //
 // Combinators
 //
