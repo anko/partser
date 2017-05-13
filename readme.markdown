@@ -131,7 +131,8 @@ but don't expect `clone` to copy them.
    is returned.
  - `test`: Takes a function argument.  Consumes 1 character and passes it as an
    argument to the function.  Succeeds and returns that character if the
-   function returns true. Fails otherwise.
+   function returns true. Fails otherwise.  Nice for custom checks with Unicode
+   characters.
  - `custom`: Used to construct custom parser primitives with your own logic.
    Takes a function argument.  Your function should have the same interface as
    the built-in parsers: take 2 arguments (the input string, and integer offset
