@@ -83,6 +83,8 @@ Partser gives you functions of a few different types:
 
 Together these can be used to express how to turn text into a data structure.
 
+### Result format
+
 When any is called with a string argument (and optionally an offset from which
 to begin), it will return an object with these fields:
 
@@ -91,7 +93,7 @@ to begin), it will return an object with these fields:
  - `value`:
    - **If successful**, the return value of the parse.
    - **If failed**, an array of strings representing what input would have been
-     expected at the point in the input that the parse failed.
+     acceptable at the point in the input that the parse failed.
  - `index`:
    - **If successful**, the point in the stream that the parse succeeded at.
      (Probably only useful for advanced users writing custom parser primitives
@@ -130,8 +132,11 @@ but don't expect `clone` to copy them.
  - `test`: Takes a function argument.  Consumes 1 character and passes it as an
    argument to the function.  Succeeds and returns that character if the
    function returns true. Fails otherwise.
- - `custom`: Takes a function argument.  A bit complex to explain: [see this
-   section](#defining-custom-primitive-parsers).
+ - `custom`: Used to construct custom parser primitives with your own logic.
+   Takes a function argument.  Your function should have the same interface as
+   the built-in parsers: take 2 arguments (the input string, and integer offset
+   into it that has been consumed so far) and return objects adhering to the
+   [result format](#result-format)
 
 ### Parser combinators
 

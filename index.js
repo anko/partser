@@ -168,7 +168,7 @@ Partser.Parser = (function () {
    * Allows to add custom primitive parsers
    */
   Partser.custom = function (parsingFunction) {
-    return Parser(parsingFunction(makeSuccess, makeFailure))
+    return Parser(parsingFunction)
   }
 
   Partser.alt = function () {
@@ -394,7 +394,7 @@ Partser.Parser = (function () {
   })
 
   Partser.clone = function (parser) {
-    return Partser.custom(function () { return parser._ })
+    return Partser.custom(parser._)
   }
 
   Partser.replace = function (original, replacement) {

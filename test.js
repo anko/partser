@@ -91,14 +91,12 @@ tape('lcIndex', function (t) {
   parseOk(t, lcIndex, '', { line: 1, column: 1, offset: 0 })
 })
 tape('custom `any` parser', function (t) {
-  var customAny = custom(function (success, failure) {
-    return function (stream, i) {
-      var remainingStream = stream.slice(i)
-      if (remainingStream.length) {
-        return success(i + 1, stream.charAt(i))
-      } else {
-        return failure(i, 'any character')
-      }
+  var customAny = custom(function (stream, i) {
+    var remainingStream = stream.slice(i)
+    if (remainingStream.length) {
+      return { status: true, index: i + 1, value: stream.charAt(i) }
+    } else {
+      return { status: false, index: i, value: [ 'any character' ] }
     }
   })
   parseOk(t, customAny, 'a', 'a')
@@ -110,9 +108,7 @@ tape('custom `any` parser', function (t) {
 })
 
 tape('custom parser that just calls `any`', function (t) {
-  var customAny = custom(function (success, failure) {
-    return function (stream, i) { return any(stream, i) }
-  })
+  var customAny = custom(function (stream, i) { return any(stream, i) })
   parseOk(t, customAny, 'a', 'a')
   parseOk(t, customAny, 'b', 'b')
   parseFail(t, seq(string('x'), customAny), 'x', 1, ['any character'])
