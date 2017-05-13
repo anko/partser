@@ -9,6 +9,7 @@ var tape = function (name, testFunc) {
   })
 }
 
+// Import all the things!
 var string = P.string
 var regex = P.regex
 var all = P.all
@@ -36,6 +37,8 @@ var clone = P.clone
 
 var formatError = P.formatError
 
+// Helpers for checking whether a parse succeeded as expected.  Nice as
+// adapters, in case the output format changes.
 var parseOk = function (t, parser, input, expectedValue) {
   t.deepEquals(parser(input), {
     status: true,
@@ -49,6 +52,10 @@ var parseFail = function (t, parser, input, index, expected) {
     expected: expected
   })
 }
+
+//
+// Basics
+//
 
 tape('string', function (t) {
   parseOk(t, string('a'), 'a', 'a')
@@ -82,7 +89,6 @@ tape('index', function (t) {
 tape('lcIndex', function (t) {
   parseOk(t, lcIndex, '', { line: 1, column: 1, offset: 0 })
 })
-
 tape('custom', function (t) {
   var customAny = custom(function (success, failure) {
     return function (stream, i) {
@@ -99,6 +105,10 @@ tape('custom', function (t) {
   parseOk(t, map(customAny, function (x) { return x.toUpperCase() }),
       'a', 'A')
 })
+
+//
+// Combinators
+//
 
 tape('except', function (t) {
   var forbidden = regex(/[abc]/)
@@ -208,6 +218,10 @@ tape('chain', function (t) {
   parseOk(t, weapon, 'axe', 'axe')
   parseOk(t, weapon, 'spear', 'spear')
 })
+
+//
+// Replace & co
+//
 
 tape('replace', function (t) {
   // Replacement changes the logic of one parser to the that of another.
