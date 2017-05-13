@@ -31,11 +31,11 @@ Partser.Parser = (function () {
   // without affecting the parser object's identity.
   function Parser (action) {
     // This is the external interface to any parser.
-    var instance = function (stream, offset) {
-      offset = offset || 0
+    var instance = function (stream, index) {
+      index = index || 0
       assertString(stream)
 
-      return skip(instance, Partser.eof)._(stream, offset)
+      return skip(instance, Partser.eof)._(stream, index)
     }
     instance._ = action
     return instance
