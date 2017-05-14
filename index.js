@@ -33,7 +33,6 @@ Partser.Parser = (function () {
     // This is the external interface to any parser.
     var instance = function (stream, index) {
       index = index || 0
-      assertString(stream)
 
       return skip(instance, Partser.eof)._(stream, index)
     }

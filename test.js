@@ -117,6 +117,45 @@ tape('custom parser that just calls `any`', function (t) {
       'a', 'A')
 })
 
+tape('custom parsers can take whatever instead of strings', function (t) {
+  // if you want them to!  You obviously can't expect this to work with the
+  // built-in combinators though.
+
+  var compiler = custom(function (environment, i) {
+    var input = environment.sourceCode
+    var reducer = environment.reducer
+
+    var whitespace = regex(/\s*/)
+    var lexeme = function (parser) {
+      return map(seq(parser, whitespace), function (result) {
+        return result[0]
+      })
+    }
+
+    var numbers = map(
+        times(lexeme(regex(/\d+/)), 0, Infinity),
+        function (nums) { return nums.map(Number) })
+
+    var result = numbers(input)
+    console.log(result)
+    return {
+      status: result.status,
+      index: result.index,
+      value: result.value.reduce(reducer, 0)
+    }
+  })
+
+  var input = {
+    sourceCode: '1 2 3',
+    reducer: function (a, b) { return a + b }
+  }
+  t.deepEquals(compiler(input), {
+    status: true,
+    value: 6,
+    index: 5
+  })
+})
+
 //
 // Combinators
 //
