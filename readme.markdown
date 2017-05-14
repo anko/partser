@@ -15,8 +15,8 @@ like `"hi"` and outputs objects like `{ type: 'string', contents: 'hi' }`.
 You could write this:
 
 <!-- !test program
-# Change the first line to the correct import, and strip the final newline.
-sed '1s/.*/var p = require(".\\/index");/' \
+# Change requires to the correct import, and strip the final newline.
+sed $"s/require('partser')/require('.\\/index')/g" \
 | node \
 | head -c -1 -->
 
@@ -179,11 +179,31 @@ but don't expect `clone` to copy them.
 Switches a parser's logic for that of another one, without affecting either's
 identity.  Returns `undefined`.
 
+
+
 ### `formatError`
 
-Takes an object representing a parse failure and the string input that caused
-it, and produces a human-readable error string stating what went wrong, where
+Takes a string that you parsed and the result object of a failed parse of that
+string.  Produces a human-readable error string stating what went wrong, where
 it went wrong, and what was expected instead.
+
+<!-- !test program
+# Insert import line to input, and delete final newline from output.
+sed "1ivar p = require('.\\/index');" \
+| node \
+| head -c -1 -->
+
+<!-- !test in formatError -->
+
+    var parser = p.seq(p.string('Axe '), p.alt(p.string('fells you!'), p.string('sharpens!')))
+
+    var input = 'Axe dies!'
+    var result = parser(input)
+    console.log(p.formatError(input, result))
+
+<!-- !test out formatError -->
+
+    expected one of 'sharpens!', 'fells you!' at character 4, got '...dies!'
 
 ## Tips and patterns
 
