@@ -137,7 +137,6 @@ tape('custom parsers can take whatever instead of strings', function (t) {
         function (nums) { return nums.map(Number) })
 
     var result = numbers(input)
-    console.log(result)
     return {
       status: result.status,
       index: result.index,
