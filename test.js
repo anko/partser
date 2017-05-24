@@ -1,4 +1,4 @@
-var P = require('./index')
+var p = require('./index')
 
 // Wrap tape to automatically t.end(), since our tests are all synchronous.
 var tape = function (name, testFunc) {
@@ -8,34 +8,6 @@ var tape = function (name, testFunc) {
     t.end()
   })
 }
-
-// Import all the things!
-var string = P.string
-var regex = P.regex
-var all = P.all
-var any = P.any
-var test = P.test
-var eof = P.eof
-var succeed = P.succeed
-var fail = P.fail
-var index = P.index
-var lcIndex = P.lcIndex
-var custom = P.custom
-
-var except = P.except
-var seq = P.seq
-var alt = P.alt
-var times = P.times
-var desc = P.desc
-var mark = P.mark
-var lcMark = P.lcMark
-var map = P.map
-var chain = P.chain
-
-var replace = P.replace
-var clone = P.clone
-
-var formatError = P.formatError
 
 // Helpers for checking whether a parse succeeded as expected.  Nice as
 // adapters, in case the output format changes.
@@ -59,39 +31,39 @@ var parseFail = function (t, parser, input, index, expected) {
 //
 
 tape('string', function (t) {
-  parseOk(t, string('a'), 'a', 'a')
+  parseOk(t, p.string('a'), 'a', 'a')
 })
 tape('regex', function (t) {
-  parseOk(t, regex(/a+/), 'aa', 'aa')
-  parseOk(t, regex(/(a+)b/, 1), 'aab', 'aa')
+  parseOk(t, p.regex(/a+/), 'aa', 'aa')
+  parseOk(t, p.regex(/(a+)b/, 1), 'aab', 'aa')
 })
 tape('all', function (t) {
-  parseOk(t, all, 'aaa', 'aaa')
+  parseOk(t, p.all, 'aaa', 'aaa')
 })
 tape('any', function (t) {
-  parseOk(t, any, 'a', 'a')
-  parseOk(t, any, 'b', 'b')
+  parseOk(t, p.any, 'a', 'a')
+  parseOk(t, p.any, 'b', 'b')
 })
 tape('test', function (t) {
-  parseOk(t, test(function (x) { return x === 'a' }), 'a', 'a')
+  parseOk(t, p.test(function (x) { return x === 'a' }), 'a', 'a')
 })
 tape('eof', function (t) {
-  parseOk(t, eof, '', null)
+  parseOk(t, p.eof, '', null)
 })
 tape('succeed', function (t) {
-  parseOk(t, succeed('what'), '', 'what')
+  parseOk(t, p.succeed('what'), '', 'what')
 })
 tape('fail', function (t) {
-  parseFail(t, fail('what'), 'a', 0, ['what'])
+  parseFail(t, p.fail('what'), 'a', 0, ['what'])
 })
 tape('index', function (t) {
-  parseOk(t, index, '', 0)
+  parseOk(t, p.index, '', 0)
 })
 tape('lcIndex', function (t) {
-  parseOk(t, lcIndex, '', { line: 1, column: 1, offset: 0 })
+  parseOk(t, p.lcIndex, '', { line: 1, column: 1, offset: 0 })
 })
-tape('custom `any` parser', function (t) {
-  var customAny = custom(function (stream, i) {
+tape('custom `p.any` parser', function (t) {
+  var customAny = p.custom(function (stream, i) {
     var remainingStream = stream.slice(i)
     if (remainingStream.length) {
       return { status: true, index: i + 1, value: stream.charAt(i) }
@@ -101,19 +73,19 @@ tape('custom `any` parser', function (t) {
   })
   parseOk(t, customAny, 'a', 'a')
   parseOk(t, customAny, 'b', 'b')
-  parseFail(t, seq(string('x'), customAny), 'x', 1, ['any character'])
+  parseFail(t, p.seq(p.string('x'), customAny), 'x', 1, ['any character'])
   parseFail(t, customAny, '', 0, ['any character'])
-  parseOk(t, map(customAny, function (x) { return x.toUpperCase() }),
+  parseOk(t, p.map(customAny, function (x) { return x.toUpperCase() }),
       'a', 'A')
 })
 
-tape('custom parser that just calls `any`', function (t) {
-  var customAny = custom(function (stream, i) { return any(stream, i) })
+tape('custom parser that just calls `p.any`', function (t) {
+  var customAny = p.custom(function (stream, i) { return p.any(stream, i) })
   parseOk(t, customAny, 'a', 'a')
   parseOk(t, customAny, 'b', 'b')
-  parseFail(t, seq(string('x'), customAny), 'x', 1, ['any character'])
+  parseFail(t, p.seq(p.string('x'), customAny), 'x', 1, ['any character'])
   parseFail(t, customAny, '', 0, ['any character'])
-  parseOk(t, map(customAny, function (x) { return x.toUpperCase() }),
+  parseOk(t, p.map(customAny, function (x) { return x.toUpperCase() }),
       'a', 'A')
 })
 
@@ -121,19 +93,19 @@ tape('custom parsers can take whatever instead of strings', function (t) {
   // if you want them to!  You obviously can't expect this to work with the
   // built-in combinators though.
 
-  var compiler = custom(function (environment, i) {
+  var compiler = p.custom(function (environment, i) {
     var input = environment.sourceCode
     var reducer = environment.reducer
 
-    var whitespace = regex(/\s*/)
+    var whitespace = p.regex(/\s*/)
     var lexeme = function (parser) {
-      return map(seq(parser, whitespace), function (result) {
+      return p.map(p.seq(parser, whitespace), function (result) {
         return result[0]
       })
     }
 
-    var numbers = map(
-        times(lexeme(regex(/\d+/)), 0, Infinity),
+    var numbers = p.map(
+        p.times(lexeme(p.regex(/\d+/)), 0, Infinity),
         function (nums) { return nums.map(Number) })
 
     var result = numbers(input)
@@ -160,22 +132,22 @@ tape('custom parsers can take whatever instead of strings', function (t) {
 //
 
 tape('except', function (t) {
-  var forbidden = regex(/[abc]/)
-  var okChars = except(any, forbidden)
+  var forbidden = p.regex(/[abc]/)
+  var okChars = p.except(p.any, forbidden)
   parseFail(t, okChars, 'b', 0, ["something that is not 'b'"])
   parseFail(t, okChars, '', 0, ['any character (except /[abc]/)'])
   parseOk(t, okChars, 'x', 'x')
 })
 tape('seq', function (t) {
-  var s = string
-  var abc = seq(s('a'), s('b'), s('c'))
+  var s = p.string
+  var abc = p.seq(s('a'), s('b'), s('c'))
   parseOk(t, abc, 'abc', ['a', 'b', 'c'])
   parseFail(t, abc, 'cba', 0, ["'a'"])
 })
 
 tape('alt', function (t) {
-  var s = string
-  var abc = alt(s('a'), s('b'), s('c'))
+  var s = p.string
+  var abc = p.alt(s('a'), s('b'), s('c'))
   parseOk(t, abc, 'a', 'a')
   parseOk(t, abc, 'b', 'b')
   parseOk(t, abc, 'c', 'c')
@@ -183,12 +155,12 @@ tape('alt', function (t) {
 })
 
 tape('times', function (t) {
-  var notAtAll = times(string('a'), 0)
-  var once = times(string('a'), 1)
-  var maybeOnce = times(string('a'), 0, 1)
-  var twice = times(string('a'), 2)
-  var onceToThrice = times(string('a'), 1, 3)
-  var asManyAsYouLike = times(string('a'), 0, Infinity)
+  var notAtAll = p.times(p.string('a'), 0)
+  var once = p.times(p.string('a'), 1)
+  var maybeOnce = p.times(p.string('a'), 0, 1)
+  var twice = p.times(p.string('a'), 2)
+  var onceToThrice = p.times(p.string('a'), 1, 3)
+  var asManyAsYouLike = p.times(p.string('a'), 0, Infinity)
 
   parseOk(t, notAtAll, '', [])
   parseFail(t, notAtAll, 'a', 0, ['EOF'])
@@ -215,13 +187,13 @@ tape('times', function (t) {
 })
 
 tape('desc', function (t) {
-  var a = desc(string('a'), 'first letter of the alphabet')
+  var a = p.desc(p.string('a'), 'first letter of the alphabet')
   parseOk(t, a, 'a', 'a')
   parseFail(t, a, 'b', 0, ['first letter of the alphabet'])
 })
 
 tape('mark', function (t) {
-  var aMark = mark(regex(/a*/))
+  var aMark = p.mark(p.regex(/a*/))
   parseOk(t, aMark, '', { value: '', start: 0, end: 0 })
   parseOk(t, aMark, 'a', { value: 'a', start: 0, end: 1 })
   parseOk(t, aMark, 'aa', { value: 'aa', start: 0, end: 2 })
@@ -229,7 +201,7 @@ tape('mark', function (t) {
 })
 
 tape('lcMark', function (t) {
-  var aMark = lcMark(regex(/[a\n]*/))
+  var aMark = p.lcMark(p.regex(/[a\n]*/))
   parseOk(t, aMark, '', {
     value: '',
     start: { offset: 0, line: 1, column: 1 },
@@ -249,7 +221,7 @@ tape('lcMark', function (t) {
 })
 
 tape('map', function (t) {
-  var abc = map(regex(/[abc]/), function (x) { return x.toUpperCase() })
+  var abc = p.map(p.regex(/[abc]/), function (x) { return x.toUpperCase() })
   parseOk(t, abc, 'a', 'A')
   parseOk(t, abc, 'b', 'B')
   parseOk(t, abc, 'c', 'C')
@@ -257,11 +229,11 @@ tape('map', function (t) {
 })
 
 tape('chain', function (t) {
-  var a = regex(/[as]/)
-  var weapon = chain(a, function (result) {
+  var a = p.regex(/[as]/)
+  var weapon = p.chain(a, function (result) {
     switch (result) {
-      case 'a' : return map(string('xe'), function (x) { return result + x })
-      case 's' : return map(string('pear'), function (x) { return result + x })
+      case 'a' : return p.map(p.string('xe'), function (x) { return result + x })
+      case 's' : return p.map(p.string('pear'), function (x) { return result + x })
     }
   })
   parseOk(t, weapon, 'axe', 'axe')
@@ -269,127 +241,127 @@ tape('chain', function (t) {
 })
 
 //
-// Replace & co
+// p.replace & co
 //
 
 tape('replace', function (t) {
   // Replacement changes the logic of one parser to the that of another.
-  var a = string('a')
-  var b = string('b')
-  replace(a, b)
+  var a = p.string('a')
+  var b = p.string('b')
+  p.replace(a, b)
   parseOk(t, a, 'b', 'b')
 
   // This doesn't change the replaced parser's identity, so its behaviour just
   // changes in-place wherever it's been used otherwise.
-  a = string('a')
-  b = string('b')
-  var many = times(a, 1, Infinity)
-  replace(a, b)
+  a = p.string('a')
+  b = p.string('b')
+  var many = p.times(a, 1, Infinity)
+  p.replace(a, b)
   parseOk(t, many, 'bb', ['b', 'b'])
 
-  // A `replace` is one-off: the replacement is by value, not reference.  This
+  // A `p.replace` is one-off: the replacement is by value, not reference.  This
   // means replacing A with B and later replacing B with C, means A's logic is
   // still from what B was then, not what it changed to become.
-  a = string('a')
-  b = string('b')
-  replace(a, b)
-  replace(b, string('c'))
+  a = p.string('a')
+  b = p.string('b')
+  p.replace(a, b)
+  p.replace(b, p.string('c'))
   parseOk(t, a, 'b', 'b')
 
-  // This also works with `chain`, which dynamically chooses which parser to go
+  // This also works with `p.chain`, which dynamically chooses which parser to go
   // with next, based on the result of the previous.
-  a = string('a')
-  b = string('b')
-  var acbd = chain(alt(a, b), function (result) {
+  a = p.string('a')
+  b = p.string('b')
+  var acbd = p.chain(p.alt(a, b), function (result) {
     if (result.match(/a+/)) {
-      return string('c')
+      return p.string('c')
     } else {
-      return string('d')
+      return p.string('d')
     }
   })
   parseOk(t, acbd, 'ac', 'c')
   parseOk(t, acbd, 'bd', 'd')
-  replace(a, regex(/a+/))
+  p.replace(a, p.regex(/a+/))
   parseOk(t, acbd, 'aaac', 'c')
   parseFail(t, acbd, 'aaad', 3, ["'c'"])
 })
 
 tape('replace with except', function (t) {
-  var a = string('a')
-  var anyButA = except(any, a)
-  replace(a, string('b'))
+  var a = p.string('a')
+  var anyButA = p.except(p.any, a)
+  p.replace(a, p.string('b'))
   parseOk(t, anyButA, 'a', 'a')
   parseFail(t, anyButA, 'b', 0, ["something that is not 'b'"])
 })
 
-tape('replace with alt', function (t) {
-  var a = fail('defined later')
-  var b = string('b')
-  var aOrB = alt(a, b)
-  replace(a, map(string('c'), function () { return 'hi' }))
+tape('replace with p.alt', function (t) {
+  var a = p.fail('defined later')
+  var b = p.string('b')
+  var aOrB = p.alt(a, b)
+  p.replace(a, p.map(p.string('c'), function () { return 'hi' }))
   parseOk(t, aOrB, 'b', 'b')
   parseOk(t, aOrB, 'c', 'hi')
   parseFail(t, aOrB, 'a', 0, ["'b'", "'c'"])
 })
 
-tape('replace with alt', function (t) {
-  var listParserLater = fail('implemented later')
-  var expression = alt(
+tape('replace with p.alt', function (t) {
+  var listParserLater = p.fail('implemented later')
+  var expression = p.alt(
     listParserLater,
-    string('a'))
+    p.string('a'))
 
-  var between = function (p, before, after) {
-    return map(seq(before, p, after), function (r) { return r[1] })
+  var between = function (parser, before, after) {
+    return p.map(p.seq(before, parser, after), function (r) { return r[1] })
   }
 
-  var listOpener = string('(')
-  var listTerminator = string(')')
+  var listOpener = p.string('(')
+  var listTerminator = p.string(')')
 
-  var listContent = desc(times(expression, 0, Infinity), 'list content')
+  var listContent = p.desc(p.times(expression, 0, Infinity), 'list content')
   var list = between(listContent, listOpener, listTerminator)
-  replace(listParserLater, list)
+  p.replace(listParserLater, list)
 
   parseOk(t, expression, 'a', 'a')
   parseOk(t, expression, '()', [])
 })
 
 tape('clone', function (t) {
-  var a = string('a')
+  var a = p.string('a')
 
   // Cloning an object creates a parser which has a separate identity but the
   // same parsing behaviour.
   t.equal(a, a)
-  t.notEqual(a, clone(a))
+  t.notEqual(a, p.clone(a))
   parseOk(t, a, 'a', 'a')
-  parseOk(t, clone(a), 'a', 'a')
-  // This means you can modify the clone, e.g. by replacing it's logic, without
+  parseOk(t, p.clone(a), 'a', 'a')
+  // This means you can modify the p.clone, e.g. by replacing it's logic, without
   // affecting the original.
-  var b = clone(a)
-  replace(b, string('b'))
-  parseOk(t, b, 'b', 'b') // clone logic altered
+  var b = p.clone(a)
+  p.replace(b, p.string('b'))
+  parseOk(t, b, 'b', 'b') // p.clone logic altered
   parseOk(t, a, 'a', 'a') // original still the same
 
   // Cloning does not preserve object properties.
-  a = string('a')
+  a = p.string('a')
   a.hi = 'hello'
-  t.notOk(clone('a').hi)
+  t.notOk(p.clone('a').hi)
 
-  // Without cloning the `a` here, one of the branches of the alt would refer
-  // to the alt itself (since that's what `a` is replaced with and cause an
+  // Without cloning the `a` here, one of the branches of the p.alt would refer
+  // to the p.alt itself (since that's what `a` is replaced with and cause an
   // infinite loop when called.
-  a = string('a')
-  replace(a, alt(clone(a), string('b')))
+  a = p.string('a')
+  p.replace(a, p.alt(p.clone(a), p.string('b')))
   parseOk(t, a, 'a', 'a')
   parseOk(t, a, 'b', 'b')
 })
 
 tape('self-reference', function (t) {
-  var parenOpen = string('(')
-  var parenClose = string(')')
-  var list = fail('defined later')
-  replace(list,
-      times(map(
-          seq(parenOpen, list, parenClose),
+  var parenOpen = p.string('(')
+  var parenClose = p.string(')')
+  var list = p.fail('defined later')
+  p.replace(list,
+      p.times(p.map(
+          p.seq(parenOpen, list, parenClose),
           function (x) { return { v: x[1] } }),
         0, Infinity))
 
@@ -399,9 +371,9 @@ tape('self-reference', function (t) {
 })
 
 tape('formatError', function (t) {
-  var a = string('a')
+  var a = p.string('a')
   var source = 'not a'
   var error = a(source)
-  t.equals(formatError(source, error),
+  t.equals(p.formatError(source, error),
       "expected 'a' at character 0, got 'not a'")
 })
