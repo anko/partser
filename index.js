@@ -31,10 +31,10 @@ Partser.Parser = (function () {
   // without affecting the parser object's identity.
   function Parser (action) {
     // This is the external interface to any parser.
-    var instance = function (stream, index) {
+    var instance = function (stream, index, env) {
       index = index || 0
 
-      return skip(instance, Partser.eof)._(stream, index)
+      return skip(instance, Partser.eof)._(stream, index, env)
     }
     instance._ = action
     return instance
@@ -99,8 +99,8 @@ Partser.Parser = (function () {
   Partser.except = function (allowed, forbidden) {
     assertParser(allowed)
     assertParser(forbidden)
-    return Parser(function (stream, i) {
-      var forbiddenResult = forbidden._(stream, i)
+    return Parser(function (stream, i, env) {
+      var forbiddenResult = forbidden._(stream, i, env)
       if (forbiddenResult.status) {
         return makeFailure(i, "something that is not '" +
             forbiddenResult.value + "'")
@@ -114,7 +114,7 @@ Partser.Parser = (function () {
         // Ensure that it's clear to users that they really should use `desc`
         // to give instances of this parser a clearer name.
       } else {
-        var allowedResult = allowed._(stream, i)
+        var allowedResult = allowed._(stream, i, env)
         if (allowedResult.status) {
           return allowedResult
         } else {
@@ -132,12 +132,12 @@ Partser.Parser = (function () {
 
     parsers.forEach(assertParser)
 
-    return Parser(function (stream, i) {
+    return Parser(function (stream, i, env) {
       var result
       var accum = new Array(numParsers)
 
       for (var j = 0; j < numParsers; j += 1) {
-        result = mergeReplies(parsers[j]._(stream, i), result)
+        result = mergeReplies(parsers[j]._(stream, i, env), result)
         if (!result.status) return result
         accum[j] = result.value
         i = result.index
@@ -169,10 +169,10 @@ Partser.Parser = (function () {
 
     parsers.forEach(assertParser)
 
-    return Parser(function (stream, i) {
+    return Parser(function (stream, i, env) {
       var result
       for (var j = 0; j < parsers.length; j += 1) {
-        result = mergeReplies(parsers[j]._(stream, i), result)
+        result = mergeReplies(parsers[j]._(stream, i, env), result)
         if (result.status) return result
       }
       return result
@@ -209,13 +209,13 @@ Partser.Parser = (function () {
     assertNumber(min)
     assertNumber(max)
 
-    return Parser(function (stream, i) {
+    return Parser(function (stream, i, env) {
       var accum = []
       var result
       var prevResult
 
       for (var times = 0; times < min; times += 1) {
-        result = self._(stream, i)
+        result = self._(stream, i, env)
         prevResult = mergeReplies(result, prevResult)
         if (result.status) {
           i = result.index
@@ -224,7 +224,7 @@ Partser.Parser = (function () {
       }
 
       for (; times < max; times += 1) {
-        result = self._(stream, i)
+        result = self._(stream, i, env)
         prevResult = mergeReplies(result, prevResult)
         if (result.status) {
           i = result.index
@@ -241,10 +241,10 @@ Partser.Parser = (function () {
     assertfunction(fn)
 
     var self = parser
-    return Parser(function (stream, i) {
-      var result = self._(stream, i)
+    return Parser(function (stream, i, env) {
+      var result = self._(stream, i, env)
       if (!result.status) return result
-      return mergeReplies(makeSuccess(result.index, fn(result.value)), result)
+      return mergeReplies(makeSuccess(result.index, fn(result.value, env)), result)
     })
   }
 
@@ -262,8 +262,8 @@ Partser.Parser = (function () {
 
   Partser.desc = function (parser, expected) {
     var self = parser
-    return Parser(function (stream, i) {
-      var reply = self._(stream, i)
+    return Parser(function (stream, i, env) {
+      var reply = self._(stream, i, env)
       if (!reply.status) reply.value = [expected]
       return reply
     })
@@ -397,11 +397,11 @@ Partser.Parser = (function () {
   Partser.chain = function (parser, f) {
     assertParser(parser)
     var self = parser
-    return Parser(function (stream, i) {
-      var result = self._(stream, i)
+    return Parser(function (stream, i, env) {
+      var result = self._(stream, i, env)
       if (!result.status) return result
-      var nextParser = f(result.value)
-      return mergeReplies(nextParser._(stream, result.index), result)
+      var nextParser = f(result.value, env)
+      return mergeReplies(nextParser._(stream, result.index, env), result)
     })
   }
 

@@ -137,12 +137,44 @@ tape('except', function (t) {
   parseFail(t, okChars, 'b', 0, ["something that is not 'b'"])
   parseFail(t, okChars, '', 0, ['any character (except /[abc]/)'])
   parseOk(t, okChars, 'x', 'x')
+
+  var needsEnv = p.map(p.string('a'), function (x, f) { return f(x) })
+
+  // As success case
+  ;(function () {
+    var withEnv = p.except(needsEnv, p.string('b'))
+    t.deepEquals(withEnv('a', 0, function (x) { return x.toUpperCase() }), {
+      status: true,
+      value: 'A',
+      index: 1
+    }, 'passes env for success case')
+  })()
+
+  // As failure case
+  ;(function () {
+    var withEnv = p.except(p.any, needsEnv)
+    t.deepEquals(withEnv('a', 0, function (x) { return x.toUpperCase() }), {
+      status: false,
+      value: [ 'something that is not \'A\'' ],
+      index: 0
+    }, 'passes env for failure case')
+  })()
 })
+
 tape('seq', function (t) {
   var s = p.string
   var abc = p.seq(s('a'), s('b'), s('c'))
   parseOk(t, abc, 'abc', ['a', 'b', 'c'])
   parseFail(t, abc, 'cba', 0, ["'a'"])
+
+  var needsEnv = p.map(p.string('a'), function (x, f) { return f(x) })
+
+  var withEnv = p.seq(p.any, needsEnv)
+  t.deepEquals(withEnv('xa', 0, function (x) { return x.toUpperCase() }), {
+    status: true,
+    value: [ 'x', 'A' ],
+    index: 2
+  }, 'passes env')
 })
 
 tape('alt', function (t) {
@@ -152,6 +184,21 @@ tape('alt', function (t) {
   parseOk(t, abc, 'b', 'b')
   parseOk(t, abc, 'c', 'c')
   parseFail(t, abc, 'd', 0, ["'c'", "'b'", "'a'"])
+
+  var needsEnv1 = p.map(p.string('a'), function (x, f) { return f(x) })
+  var needsEnv2 = p.map(p.string('b'), function (x, f) { return f(x) })
+
+  var withEnv = p.alt(needsEnv1, needsEnv2)
+  t.deepEquals(withEnv('a', 0, function (x) { return x.toUpperCase() }), {
+    status: true,
+    value: 'A',
+    index: 1
+  }, 'passes env to first')
+  t.deepEquals(withEnv('b', 0, function (x) { return x.toUpperCase() }), {
+    status: true,
+    value: 'B',
+    index: 1
+  }, 'passes env to subsequent')
 })
 
 tape('times', function (t) {
@@ -184,12 +231,28 @@ tape('times', function (t) {
 
   parseOk(t, asManyAsYouLike, '', [])
   parseOk(t, asManyAsYouLike, 'aaa', ['a', 'a', 'a'])
+
+  var needsEnv = p.map(p.string('a'), function (x, f) { return f(x) })
+  var withEnv = p.times(needsEnv, 0, Infinity)
+  t.deepEquals(withEnv('aaaaa', 0, function (x) { return x.toUpperCase() }), {
+    status: true,
+    value: [ 'A', 'A', 'A', 'A', 'A' ],
+    index: 5
+  }, 'passes env to all')
 })
 
 tape('desc', function (t) {
   var a = p.desc(p.string('a'), 'first letter of the alphabet')
   parseOk(t, a, 'a', 'a')
   parseFail(t, a, 'b', 0, ['first letter of the alphabet'])
+
+  var needsEnv = p.map(p.string('a'), function (x, f) { return f(x) })
+  var withEnv = p.desc(needsEnv, 'the letter "a"')
+  t.deepEquals(withEnv('a', 0, function (x) { return x.toUpperCase() }), {
+    status: true,
+    value: 'A',
+    index: 1
+  }, 'passes env')
 })
 
 tape('mark', function (t) {
@@ -226,6 +289,12 @@ tape('map', function (t) {
   parseOk(t, abc, 'b', 'B')
   parseOk(t, abc, 'c', 'C')
   parseFail(t, abc, 'd', 0, ['/[abc]/'])
+  var withEnv = p.map(p.string('a'), function (x, f) { return f(x) })
+  t.deepEquals(withEnv('a', 0, function (x) { return x.toUpperCase() }), {
+    status: true,
+    value: 'A',
+    index: 1
+  }, 'passes env')
 })
 
 tape('chain', function (t) {
@@ -238,6 +307,17 @@ tape('chain', function (t) {
   })
   parseOk(t, weapon, 'axe', 'axe')
   parseOk(t, weapon, 'spear', 'spear')
+  var withEnv = p.map(
+      p.chain(p.string('a'), function (result, env) { return env.chain() }),
+        function (x, env) { return env.after(x) })
+  t.deepEquals(withEnv('ab', 0, {
+    chain: function () { return p.string('b') },
+    after: function (x) { return x.toUpperCase() }
+  }), {
+    status: true,
+    value: 'B',
+    index: 2
+  }, 'passes env')
 })
 
 //
