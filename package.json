@@ -18,6 +18,7 @@
   ],
   "main": "index.js",
   "devDependencies": {
+    "immutable": "^3.8.1",
     "standard": "^10.0.2",
     "tape": "^4.5.0",
     "tests-ex-markdown": "^2.0.3"

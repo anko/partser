@@ -1,4 +1,5 @@
 var p = require('./index')
+var immutable = require('immutable')
 
 // Wrap tape to automatically t.end(), since our tests are all synchronous.
 var tape = function (name, testFunc) {
@@ -314,6 +315,54 @@ tape('map', function (t) {
     value: 'A',
     index: 1
   }, 'passes env')
+})
+
+tape('recursive parser with env stack corresponding to list nesting', function (t) {
+  var between = function (parser, before, after) {
+    return p.map(p.seq(before, parser, after), function (r) { return r[1] })
+  }
+
+  var changeEnv = function (parser, change) {
+    return p.custom(function (stream, index, env) {
+      return parser._(stream, index, change(env))
+    })
+  }
+
+  var atom = p.map(
+    p.string('a'),
+    function (result, env) {
+      return env.get('value')
+    })
+
+  var listLater = p.fail('implemented later')
+  var expression = p.alt(
+    listLater,
+    atom)
+
+  var listContent = p.times(expression, 0, Infinity)
+  var list = changeEnv(
+    between(listContent, p.string('('), p.string(')')),
+    function (env) {
+      return env.set('value', env.get('value') + 1)
+    })
+  p.replace(listLater, list)
+
+  t.deepEquals(expression('a', 0, immutable.Map({ value: 0 })), {
+    status: true,
+    value: 0,
+    index: 1
+  }, 'env stack 0')
+  t.deepEquals(expression('(a)', 0, immutable.Map({ value: 0 })), {
+    status: true,
+    value: [ 1 ],
+    index: 3
+  }, 'env stack 1')
+
+  t.deepEquals(expression('(a(a))', 0, immutable.Map({ value: 0 })), {
+    status: true,
+    value: [ 1, [ 2 ] ],
+    index: 6
+  }, 'env stack 2')
 })
 
 tape('chain', function (t) {
