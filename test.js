@@ -73,6 +73,7 @@ tape('custom `p.any` parser', function (t) {
   })
   parseOk(t, customAny, 'a', 'a')
   parseOk(t, customAny, 'b', 'b')
+  parseOk(t, p.seq(p.string('x'), customAny), 'xa', ['x', 'a'])
   parseFail(t, p.seq(p.string('x'), customAny), 'x', 1, ['any character'])
   parseFail(t, customAny, '', 0, ['any character'])
   parseOk(t, p.map(customAny, function (x) { return x.toUpperCase() }),
@@ -87,6 +88,24 @@ tape('custom parser that just calls `p.any`', function (t) {
   parseFail(t, customAny, '', 0, ['any character'])
   parseOk(t, p.map(customAny, function (x) { return x.toUpperCase() }),
       'a', 'A')
+})
+
+tape('custom-wrapping a recursive parser', function (t) {
+  var listLater = p.fail('defined later')
+  var list = p.map(
+    p.seq(p.string('('),
+      p.times(p.alt(listLater, p.string('x')), 0, Infinity),
+      p.string(')')),
+    function ([before, mid, after]) {
+      return mid
+    })
+
+  var customWrappedList = p.custom(function (stream, i, env) {
+    return list._(stream, i, env)
+  })
+  p.replace(listLater, customWrappedList)
+
+  parseOk(t, list, '(x(x))', [ 'x', [ 'x' ] ])
 })
 
 tape('custom parsers can take whatever instead of strings', function (t) {
