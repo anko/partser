@@ -365,6 +365,40 @@ tape('recursive parser with env stack corresponding to list nesting', function (
   }, 'env stack 2')
 })
 
+// tape('parser that lets its sub-parsers modify the env', function (t) {
+//   var number = p.map(
+//     p.regex(/\s*(\d+)\s*/, 1),
+//     function (result, env) {
+//       return {
+//         result: result,
+//         env: env.set('sum', env.get('sum') + Number(result))
+//       }
+//     })
+//
+//   // Seq combinator, but such that sub-parsers are expected to return objects
+//   // of the form { result, env }, where the env is passed as the env to the
+//   // next sub-parser.
+//   var seqEnv = function () {
+//     // Wrap each input parser in a parser that captures
+//     var parsers = [].slice.call(arguments).map(function (parser) {
+//     })
+//
+//     var previousEnv = null
+//     p.seq(
+//   }
+//
+//   var sum = p.map(
+//     p.times(number, 0, Infinity),
+//     function (results, env) {
+//       console.log(results)
+//     })
+//   t.deepEquals(sum('1 2 3', 0, immutable.Map({ sum: 0 })), {
+//     status: true,
+//     value: 6,
+//     index: 5
+//   }, 'sum')
+// })
+
 tape('chain', function (t) {
   var a = p.regex(/[as]/)
   var weapon = p.chain(a, function (result) {
