@@ -1,21 +1,16 @@
 var Partser = {}
 
 // For ensuring we have the right argument types
-function assertParser (p) {
-  if (typeof p._ !== 'function') throw new Error('not a parser: ' + p)
+var assert = function (name, check) {
+  return function (input) {
+    if (!check(input)) throw new Error('Not a ' + name + ': ' + input)
+  }
 }
-function assertNumber (x) {
-  if (typeof x !== 'number') throw new Error('not a number: ' + x)
-}
-function assertRegexp (x) {
-  if (!(x instanceof RegExp)) throw new Error('not a regex: ' + x)
-}
-function assertfunction (x) {
-  if (typeof x !== 'function') throw new Error('not a function: ' + x)
-}
-function assertString (x) {
-  if (typeof x !== 'string') throw new Error('not a string: ' + x)
-}
+const assertParser = assert('parser', (x) => x._ && typeof x._ === 'function')
+const assertNumber = assert('number', (x) => typeof x === 'number')
+const assertRegexp = assert('regex', (x) => x instanceof RegExp)
+const assertFunction = assert('function', (x) => typeof x === 'function')
+const assertString = assert('string', (x) => typeof x === 'string')
 
 var skip = function (parser, next) {
   return Partser.map(Partser.seq(parser, next), function (r) { return r[0] })
@@ -216,7 +211,7 @@ Partser.Parser = (function () {
   }
 
   Partser.map = function (parser, fn) {
-    assertfunction(fn)
+    assertFunction(fn)
 
     var self = parser
     return Parser(function (stream, i, env) {
@@ -316,7 +311,7 @@ Partser.Parser = (function () {
   })
 
   Partser.test = function (predicate) {
-    assertfunction(predicate)
+    assertFunction(predicate)
 
     return Parser(function (stream, i) {
       var char = stream.charAt(i)
