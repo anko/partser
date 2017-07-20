@@ -155,9 +155,6 @@ Partser.Parser = (function () {
     })
   }
 
-  /**
-   * Allows to add custom primitive parsers
-   */
   Partser.custom = function (parsingFunction) {
     return Parser(parsingFunction)
   }
@@ -179,28 +176,10 @@ Partser.Parser = (function () {
     })
   }
 
-  // -*- primitive combinators -*- //
+  //
+  // Combinators
+  //
 
-  // equivalent to:
-  // _.times = function (min, max) {
-  //   if (arguments.length < 2) max = min
-  //   var self = this
-  //   if (min > 0) {
-  //     return self.then(function (x) {
-  //       return self.times(min - 1, max - 1).then(function (xs) {
-  //         return [x].concat(xs)
-  //       })
-  //     })
-  //   }
-  //   else if (max > 0) {
-  //     return self.then(function (x) {
-  //       return self.times(0, max - 1).then(function (xs) {
-  //         return [x].concat(xs)
-  //       })
-  //     }).or(succeed([]))
-  //   }
-  //   else return succeed([])
-  // }
   Partser.times = function (parser, min, max) {
     if (arguments.length < 3) max = min
     var self = parser
@@ -236,7 +215,6 @@ Partser.Parser = (function () {
     })
   }
 
-  // -*- higher-level combinators -*- //
   Partser.map = function (parser, fn) {
     assertfunction(fn)
 
@@ -269,7 +247,10 @@ Partser.Parser = (function () {
     })
   }
 
-  // -*- primitive parsers -*- //
+  //
+  // Primitives
+  //
+
   Partser.string = function (str) {
     var len = str.length
     var expected = "'" + str + "'"
@@ -383,6 +364,10 @@ Partser.Parser = (function () {
       column: columnWeAreUpTo
     })
   })
+
+  //
+  // Specials
+  //
 
   Partser.clone = function (parser) {
     return Partser.custom(parser._)
