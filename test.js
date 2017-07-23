@@ -182,13 +182,7 @@ tape('except', function (t) {
 })
 
 tape('seq', function (t) {
-  var s = p.string
-  var abc = p.seq(s('a'), s('b'), s('c'))
-  parseOk(t, abc, 'abc', ['a', 'b', 'c'])
-  parseFail(t, abc, 'cba', 0, ["'a'"])
-
   var needsEnv = p.map(p.string('a'), function (x, f) { return f(x) })
-
   var withEnv = p.seq(p.any, needsEnv)
   t.deepEquals(withEnv('xa', 0, function (x) { return x.toUpperCase() }), {
     status: true,
