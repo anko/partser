@@ -57,28 +57,20 @@ Partser.Parser = (function () {
   }
 
   var mergeReplies = (function () {
-    function furthest (result) {
-      if (result.status) return -1
-      else return result.index
-    }
+    function furthest (result) { return result.status ? -1 : result.index }
+    function expected (result) { return result.status ? [] : result.value }
 
-    function expected (result) {
-      if (result.status) return []
-      else return result.value
-    }
-
-    return function (result, last) {
-      if (!last) return result
-      if (furthest(result) > furthest(last)) return result
-
-      var expectedValue = (furthest(result) === furthest(last))
-        ? expected(result).concat(expected(last))
-        : expected(last)
-
-      return {
-        status: result.status,
-        index: result.index,
-        value: result.status ? result.value : expectedValue
+    return function (prev, next) {
+      if (!next || prev.status || furthest(prev) > furthest(next)) return prev
+      else {
+        // The `next` result is never a success, so we must be merging failures
+        return {
+          status: false,
+          index: prev.index,
+          value: (furthest(prev) === furthest(next))
+            ? expected(prev).concat(expected(next))
+            : expected(next)
+        }
       }
     }
   })()
