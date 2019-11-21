@@ -1,0 +1,42 @@
+var p = require('.')
+
+var space = p.regex(/\s/)
+
+var sepBy = function (thing, separator) {
+  var unit = p.map(
+      p.seq(thing, p.times(separator, 0, Infinity)),
+      function (results) { return results[0] })
+  return p.times(unit, 0, Infinity)
+}
+
+var atom = p.regex(/[a-zA-Z0-9_-]+/)
+
+var expression = p.eof
+
+var list = p.map(
+    p.seq(p.string('('), sepBy(atom, space), p.string(')')),
+    function (results, environment) {
+      // Expects the `environment` argument to be an object containing
+      // functions for compiling AST, and registering new macros.  Also
+      // contains a reference to the partsers making up the parser, so they can
+      // be modified at run-time.
+
+      var listContents = results[1]
+      // Compile stuff here, call macros based on `listContents`, et cetera.
+      // You know, classic central compiler "god switch statement".
+      return listContents.map(environment.compile)
+    })
+
+var environment = {
+  // Put whatever you want here.  For example: compiler functions, a table to
+  // store macros, or a reference to the parser itself.
+  compile: function (name) {
+    return {
+      type: 'Literal',
+      name: name
+    }
+  }
+}
+var result = list('(a b c)', 0, environment) // Note the third argument.
+
+console.log(result.value)

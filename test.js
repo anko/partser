@@ -191,6 +191,89 @@ tape('seq', function (t) {
   }, 'passes env')
 })
 
+tape('seqInto', function (t) {
+  var a = p.map(p.any, function (result, env) {
+    var newEnv = env.set('value', env.get('value') + 1)
+    return {
+      result: newEnv.get('value'),
+      env: newEnv
+    }
+  })
+
+  var withEnv = p.map(
+    p.seqInto([a, a], function (parser, stream, i, env, previousResult) {
+      env = previousResult ? previousResult.value.env : env
+      return parser._(stream, i, env)
+    }),
+    function (results) {
+      return results.map(function (x) { return x.result })
+    })
+  t.deepEquals(withEnv('ab', 0, immutable.Map({ value: 0 })), {
+    status: true,
+    value: [ 1, 2 ],
+    index: 2
+  }, 'passes env')
+})
+
+tape('parser which sub-parsers can modify env passed to next', function (t) {
+  var envInto = function (parserA, parserB) {
+    return p.chain(parserA, function (result, env) {
+      env = result.env || env
+      return p.custom(function (stream, index) {
+        var r2 = parserB(stream, index, env)
+        r2.value = [ result, r2.value ]
+        return r2
+      })
+    })
+  }
+  var a = p.map(p.any, function (result, env) {
+    var newEnv = env.set('value', env.get('value') + 1)
+    return {
+      result: newEnv.get('value'),
+      env: newEnv
+    }
+  })
+
+  var withEnv = p.map(
+    envInto(a, a),
+    function (x) { return x.map(function (y) { return y.result }) })
+  t.deepEquals(withEnv('ab', 0, immutable.Map({ value: 0 })), {
+    status: true,
+    value: [ 1, 2 ],
+    index: 2
+  }, 'works')
+})
+
+tape('many-parser which sub-parsers can modify env passed to next', function (t) {
+  var envInto = function (parserA, parserB) {
+    return p.chain(parserA, function (result, env) {
+      env = result.env || env
+      return p.custom(function (stream, index) {
+        var r2 = parserB(stream, index, env)
+        r2.value = [ result, r2.value ]
+        return r2
+      })
+    })
+  }
+  var a = p.map(p.any, function (result, env) {
+    var newEnv = env.set('value', env.get('value') + 1)
+    return {
+      result: newEnv.get('value'),
+      env: newEnv
+    }
+  })
+
+  var withEnv = p.map(
+    envInto(a, a),
+    function (x) { return x.map(function (y) { return y.result }) })
+  t.deepEquals(withEnv('ab', 0, immutable.Map({ value: 0 })), {
+    status: true,
+    value: [ 1, 2 ],
+    index: 2
+  }, 'works')
+})
+
+
 tape('alt', function (t) {
   var s = p.string
   var abc = p.alt(s('a'), s('b'), s('c'))
@@ -360,6 +443,16 @@ tape('recursive parser with env stack corresponding to list nesting', function (
 })
 
 // tape('parser that lets its sub-parsers modify the env', function (t) {
+//
+//   var envInto = function (parser-a, parser-b) {
+//     return p.chain(parser-a, function (result, env) {
+//       env = result.env || env
+//       return p.custom(function (stream, index) {
+//         return parser-b(stream, index, env)
+//       })
+//     })
+//   }
+//
 //   var number = p.map(
 //     p.regex(/\s*(\d+)\s*/, 1),
 //     function (result, env) {

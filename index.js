@@ -120,6 +120,25 @@ Partser.Parser = (function () {
     })
   }
 
+  Partser.seqInto = function (parsers, handle) {
+    var numParsers = parsers.length
+    parsers.forEach(assertParser)
+
+    return Parser(function (stream, i, env) {
+      var result
+      var accum = new Array(numParsers)
+
+      for (var j = 0; j < numParsers; j += 1) {
+        result = mergeReplies(handle(parsers[j], stream, i, env, result), result)
+        if (!result.status) return result
+        accum[j] = result.value
+        i = result.index
+      }
+
+      return mergeReplies(makeSuccess(i, accum), result)
+    })
+  }
+
   // [Parser a] -> Parser [a]
   var seq = Partser.seq = function () {
     var parsers = [].slice.call(arguments)
