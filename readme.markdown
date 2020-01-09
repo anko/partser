@@ -1,56 +1,60 @@
 # partser [![](https://img.shields.io/npm/v/partser.svg?style=flat-square)](https://www.npmjs.com/package/partser) [![](https://img.shields.io/travis/anko/partser.svg?style=flat-square)](https://travis-ci.org/anko/partser) [![](https://img.shields.io/david/anko/partser.svg?style=flat-square)](https://david-dm.org/anko/partser)
 
-Partser is a library for writing parsers that are made of parts that are also
-parsers.  The user can switch out any parser part's behaviour for that of a
-different parser.
+Partser is a combinatory parsing library for JavaScript with a focus on being
+*ridiculously* flexible and modular.  Among other things, it—
 
-This lets you write ridiculously modular parsers that keep your parser
-adaptable and, if necessary, user-modifiable.
+ - can modify its own parsing logic *in the middle of parsing*,
+ - passes an environment object to parsers,
+ - can create nested sub-environments during parsing, and
+ - lets you easily implement your own custom primitive parsers or combinators.
+
+If you are looking for a combinatory parsing library that is similar but
+friendlier and without these advanced features, try
+[Parsimmon](https://github.com/jneen/parsimmon), which this project was
+originally forked from.
 
 ## Example
 
-For example, suppose you wanted to make a parser that accepts string literals
-like `"hi"` and outputs objects like `{ type: 'string', contents: 'hi' }`.
-
-You could write this:
+Here's a demonstration of a string literal parser that reads the quote symbol
+that it should use from the environment object passed by the caller:
 
 <!-- !test program
 # Change requires to the correct import, and strip the final newline.
-sed $"s/require('partser')/require('.\\/index')/g" \
+sed "s/require('partser')/require('.\\/index.js')/g" \
 | node \
 | head -c -1 -->
 
 <!-- !test in quick example -->
 
 ``` js
-var p = require('partser')
-// Construct a string parser
-var quote = p.string('"')
+var p = require('./index.js')
+
+// Let's parse a string!
+
+// Just for fun, let's make the quote character configurable.  We can define
+// that it should be loaded from the environment.
+var quote = p.from((env) => env.quoteParser)
+
+// The string can contain anything except the quote character.
 var stringChar = p.except(p.any, quote)
+
+// The contents of a string (the stuff between the quotes) shall be that sort
+// of character any number of times, all joined together.
 var stringContents = p.map(
   p.times(stringChar, 0, Infinity),
-  function (chars) {
-    // The argument is an array like `[ 'h', 'i' ]`
-    return chars.join('')
-  })
+  (chars) => chars.join(''))
+
+// Putting it all together, we'll want a quote, contents, then another quote.
+// Then we'll want to pick out just the content part, and return that.
 var stringParser = p.map(
   p.seq(quote, stringContents, quote),
-  function (parts) {
-    // The argument is an array like `[ '"', 'hi', '"' ]`
-    return {
-      type: 'string',
-      contents: parts[1]
-    }
-  })
+  ([startingQuote, contents, endingQuote]) => contents)
 
-// Use it to parse something
-console.log(stringParser('"hi"'))
-
-// Use dollar signs as quotes instead
-p.replace(quote, p.string("$"))
-
-// The change propagates to everything that calls the `quote` parser.
-console.log(stringParser('$hi$'))
+// Now we can pass an environment object as part of the call to the parser,
+// telling it what that quoteParser should be.
+console.log(stringParser('"hi"', { quoteParser: p.string('"') }))
+console.log(stringParser('$hi$', { quoteParser: p.string('$') }))
+console.log(stringParser('ohio', { quoteParser: p.string('o') }))
 ```
 
 Running it produces this:
@@ -58,16 +62,10 @@ Running it produces this:
 <!-- !test out quick example -->
 
 ```
-{ status: true,
-  index: 4,
-  value: { type: 'string', contents: 'hi' } }
-{ status: true,
-  index: 4,
-  value: { type: 'string', contents: 'hi' } }
+{ status: true, index: 4, value: 'hi' }
+{ status: true, index: 4, value: 'hi' }
+{ status: true, index: 4, value: 'hi' }
 ```
-
-Note how the `quote` parser was `replace`'d partway through with a parser that
-accepts `$` instead of `"`, and the change propagates to the `stringParser`.
 
 ## Usage
 
@@ -75,18 +73,29 @@ Partser gives you functions of a few different types:
 
  - [*primitive parsers*](#primitive-parsers) that consume strings and return
    tokens (e.g. `all` or `any`),
- - [*parser constructors*](#parser-constructors) that return new parsers based
+ - [*parser constructors*](#parser-constructors) that create new parsers based
    on arguments (e.g.  `string` or `regex`),
  - [*parser combinators*](#parser-combinators) that take parsers and produce
-   new parsers that use them (e.g.  `seq` or `map`),
+   new parsers that use them (e.g.  `seq`, `alt`, or `map`),
  - [`replace`](#replace), which allows a parser's logic to be changed, and
 
 Together these can be used to express how to turn text into a data structure.
 
+### Calling a parser
+
+   parser(inputString [, environment [, offset]])
+
+Every parser must be called with
+
+ - an input string,
+ - *optionally* an environment object that is passed to other parsers, and to
+   user-defined functions such as with the `map` parser, and
+ - *optionally* an integer offset in characters where to start parsing (default
+   0, i.e. at the beginning).
+
 ### Result format
 
-When any is called with a string argument (and optionally an offset from which
-to begin), it will return an object with these fields:
+When called, a parser returns an object with these fields:
 
  - `status`: a Boolean representing whether the parse succeeded (`true`) or
    failed (`false`).
@@ -106,7 +115,7 @@ to begin), it will return an object with these fields:
  - `all`: Matches all input and returns it.  Always succeeds.
  - `any`: Matches any 1 character and returns it.
  - `eof`: Matches the end of input and returns null.
- - `succeed`: Always succeeds and returns null.
+ - `succeed`: Always succeeds without consuming any input, and returns null.
  - `fail`: Always fails.
  - `index`: Consumes no input.  Returns a 0-based integer representing the
    number of characters that have been consumed from the input so far.  Always
@@ -123,7 +132,7 @@ but don't expect `clone` to copy them.
 ### Parser constructors
 
  - `string`: Takes a string argument.  The returned parser matches and returns
-   that string exactly.
+   that string.
  - `regex`: Takes a RegExp argument and an optional number argument.  The
    returned parser matches anything that matches that regex and returns it.  If
    the number argument was given, that [capturing
@@ -131,8 +140,8 @@ but don't expect `clone` to copy them.
    is returned.
  - `test`: Takes a function argument.  Consumes 1 character and passes it as an
    argument to the function.  Succeeds and returns that character if the
-   function returns true. Fails otherwise.  Nice for custom checks with Unicode
-   characters.
+   function returns true.  Fails otherwise.  Nice for custom checks with
+   Unicode characters.
  - `custom`: Used to construct custom parser primitives with your own logic.
    Takes a function argument.  Your function should have the same interface as
    the built-in parsers: take 2 arguments (the input string, and integer offset
@@ -149,9 +158,6 @@ but don't expect `clone` to copy them.
    If 1 number is given, returns a parser that matches the parser exactly that
    many times.  If both numbers are given, the returned parser will match the
    given at least the minimum number of times, and at most the maximum number.
- - `map`: Takes a parser and a function.  Returns a parser that matches the
-   same as the input parser, but transforms all of its results by passing them
-   through the given function before returning them.
  - `except`: Takes an "allowed" parser and a "forbidden" parser.  Returns a
    parser that matches anything that the allowed parser accepts *and* which the
    forbidden parser does *not* accept.
@@ -167,19 +173,29 @@ but don't expect `clone` to copy them.
    returned, and `start` and `end` are objects with `offset`, `line` and
    `column` properties, just like `lcIndex` returns, which denote where in the
    input the match appeared.
+ - `map`: Takes a parser and a function.  Returns a parser that matches the
+   same as the input parser, but every time it matches, the value and
+   environment object are passed to the given function, and its return value is
+   used instead.
  - `chain`: Takes a parser and a function.  Returns a parser that matches the
-   given parser, then calls the given function with its result.  That function
-   is expected to return a parser, which match result is returned.
+   given parser, then calls the given function with its result and the
+   environment object.  That function is expected to return a parser to call
+   next, and the match result of that is returned.
  - `clone`: Takes a parser.  Returns a parser with identical logic to the given
    parser, but a distinct object identity.  Does not copy any properties
    assigned to the parser!
+ - `subEnv`: Takes a parser, and a function that takes an environment and
+   returns a derived environment.  Within the given parser, that derived
+   environment is used instead of the original one.
+ - `from`: Takes a function.  The function is called with the environment
+   object as an argument whenever the parser is needed, and the function is
+   expected to return a parser, which is then called.
 
 ### `replace`
 
 Switches a parser's logic for that of another one, without affecting either's
-identity.  Returns `undefined`.
-
-
+identity.  Returns `undefined`.  You rarely need to use this, but it's here if
+you need it for some reason.
 
 ### `formatError`
 
@@ -210,10 +226,10 @@ sed "1ivar p = require('.\\/index');" \
  - Getting infinite loops and overflowing the stack when replacing a parser
    with something that calls that parser?  You probably want to pass a `clone`
    of it instead.
- - You might want to structure your parser to export not just your main parser,
-   but also all the notable sub-parsers that it calls.  That way, if your users
-   wish they could parse some part differently, they can `replace` components
-   individually.
+ - You might want to structure your parser to load some notable parts of its
+   parsing logic from the environment object using `from`.  That way, if your
+   users wish they could parse some part differently, they can pass in the
+   functionality they wished they had instead.
 
 ## License
 
