@@ -124,7 +124,7 @@ Partser.Parser = (function () {
   Partser.subEnv = function (baseParser, deriveEnv) {
     assertFunction(deriveEnv)
     return Parser(function (stream, i, env) {
-      let newEnv = deriveEnv(env)
+      const newEnv = deriveEnv(env)
       return baseParser._(stream, i, newEnv)
     })
   }
@@ -132,7 +132,7 @@ Partser.Parser = (function () {
   Partser.fromEnv = function (lookup) {
     assertFunction(lookup)
     return Parser(function (stream, i, env) {
-      let foundParser = lookup(env)
+      const foundParser = lookup(env)
       return foundParser._(stream, i, env)
     })
   }

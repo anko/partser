@@ -69,7 +69,7 @@ tape('custom `p.any` parser', function (t) {
     if (remainingStream.length) {
       return { status: true, index: i + 1, value: stream.charAt(i) }
     } else {
-      return { status: false, index: i, value: [ 'any character' ] }
+      return { status: false, index: i, value: ['any character'] }
     }
   })
   parseOk(t, customAny, 'a', 'a')
@@ -78,7 +78,7 @@ tape('custom `p.any` parser', function (t) {
   parseFail(t, p.seq(p.string('x'), customAny), 'x', 1, ['any character'])
   parseFail(t, customAny, '', 0, ['any character'])
   parseOk(t, p.map(customAny, function (x) { return x.toUpperCase() }),
-      'a', 'A')
+    'a', 'A')
 })
 
 tape('custom parser that just calls `p.any`', function (t) {
@@ -88,7 +88,7 @@ tape('custom parser that just calls `p.any`', function (t) {
   parseFail(t, p.seq(p.string('x'), customAny), 'x', 1, ['any character'])
   parseFail(t, customAny, '', 0, ['any character'])
   parseOk(t, p.map(customAny, function (x) { return x.toUpperCase() }),
-      'a', 'A')
+    'a', 'A')
 })
 
 tape('custom-wrapping a recursive parser', function (t) {
@@ -106,7 +106,7 @@ tape('custom-wrapping a recursive parser', function (t) {
   })
   p.replace(listLater, customWrappedList)
 
-  parseOk(t, list, '(x(x))', [ 'x', [ 'x' ] ])
+  parseOk(t, list, '(x(x))', ['x', ['x']])
 })
 
 tape('custom parsers can take whatever instead of strings', function (t) {
@@ -125,8 +125,8 @@ tape('custom parsers can take whatever instead of strings', function (t) {
     }
 
     var numbers = p.map(
-        p.times(lexeme(p.regex(/\d+/)), 0, Infinity),
-        function (nums) { return nums.map(Number) })
+      p.times(lexeme(p.regex(/\d+/)), 0, Infinity),
+      function (nums) { return nums.map(Number) })
 
     var result = numbers(input)
     return {
@@ -175,7 +175,7 @@ tape('except', function (t) {
     var withEnv = p.except(p.any, needsEnv)
     t.deepEquals(withEnv('a', 0, function (x) { return x.toUpperCase() }), {
       status: false,
-      value: [ 'something that is not \'A\'' ],
+      value: ['something that is not \'A\''],
       index: 0
     }, 'passes env for failure case')
   })()
@@ -186,7 +186,7 @@ tape('seq', function (t) {
   var withEnv = p.seq(p.any, needsEnv)
   t.deepEquals(withEnv('xa', 0, function (x) { return x.toUpperCase() }), {
     status: true,
-    value: [ 'x', 'A' ],
+    value: ['x', 'A'],
     index: 2
   }, 'passes env')
 })
@@ -207,7 +207,7 @@ tape('subEnv goes out of scope after', function (t) {
   var sequence = p.seq(withEnv, p.map(p.string('x'), function (x, env) { return env }))
   t.deepEquals(sequence('ax', 0, 'Hello, '), {
     status: true,
-    value: [ 'Hello, world', 'Hello, ' ],
+    value: ['Hello, world', 'Hello, '],
     index: 2
   }, 'passes env')
 })
@@ -236,7 +236,7 @@ tape('subEnv environments can be modified by map', function (t) {
 })
 
 tape('fromEnv can call parsers from environment', function (t) {
-  let lookup = (name) => {
+  const lookup = (name) => {
     return (env) => {
       if (!env) return null
       if (env[name]) return env[name]
@@ -251,7 +251,7 @@ tape('fromEnv can call parsers from environment', function (t) {
   // property of the environment.  The first one is wrapped in a subEnv that
   // overrides the whatLetter parser to something else.  The override is only
   // in effect for the first one.
-  let sequence = p.seq(
+  const sequence = p.seq(
     p.subEnv(
       p.fromEnv(lookup('whatLetter')),
       (env) => { return { previous: env, whatLetter: p.string('!') } }),
@@ -259,13 +259,13 @@ tape('fromEnv can call parsers from environment', function (t) {
 
   t.deepEquals(sequence('a', 0, { whatLetter: p.string('a') }), {
     status: false,
-    value: [ "'!'" ],
+    value: ["'!'"],
     index: 0
   }, 'the originally specified parser has been overridden')
 
   t.deepEquals(sequence('!a', 0, { whatLetter: p.string('a') }), {
     status: true,
-    value: [ '!', 'a' ],
+    value: ['!', 'a'],
     index: 2
   }, 'reads using whatever parser the env contained')
 })
@@ -329,7 +329,7 @@ tape('times', function (t) {
   var withEnv = p.times(needsEnv, 0, Infinity)
   t.deepEquals(withEnv('aaaaa', 0, function (x) { return x.toUpperCase() }), {
     status: true,
-    value: [ 'A', 'A', 'A', 'A', 'A' ],
+    value: ['A', 'A', 'A', 'A', 'A'],
     index: 5
   }, 'passes env to all')
 })
@@ -421,13 +421,13 @@ tape('recursive parser with env stack corresponding to list nesting', function (
   }, 'env stack 0')
   t.deepEquals(expression('(a)', 0, { value: 0 }), {
     status: true,
-    value: [ 1 ],
+    value: [1],
     index: 3
   }, 'env stack 1')
 
   t.deepEquals(expression('(a(a))', 0, { value: 0 }), {
     status: true,
-    value: [ 1, [ 2 ] ],
+    value: [1, [2]],
     index: 6
   }, 'env stack 2')
 })
@@ -443,8 +443,8 @@ tape('chain', function (t) {
   parseOk(t, weapon, 'axe', 'axe')
   parseOk(t, weapon, 'spear', 'spear')
   var withEnv = p.map(
-      p.chain(p.string('a'), function (result, env) { return env.chain() }),
-        function (x, env) { return env.after(x) })
+    p.chain(p.string('a'), function (result, env) { return env.chain() }),
+    function (x, env) { return env.after(x) })
   t.deepEquals(withEnv('ab', 0, {
     chain: function () { return p.string('b') },
     after: function (x) { return x.toUpperCase() }
@@ -575,14 +575,14 @@ tape('self-reference', function (t) {
   var parenClose = p.string(')')
   var list = p.fail('defined later')
   p.replace(list,
-      p.times(p.map(
-          p.seq(parenOpen, list, parenClose),
-          function (x) { return { v: x[1] } }),
-        0, Infinity))
+    p.times(p.map(
+      p.seq(parenOpen, list, parenClose),
+      function (x) { return { v: x[1] } }),
+    0, Infinity))
 
-  parseOk(t, list, '()', [ {v: []} ])
-  parseOk(t, list, '()()', [ {v: []}, {v: []} ])
-  parseOk(t, list, '(())', [ {v: [ {v: []} ]} ])
+  parseOk(t, list, '()', [{ v: [] }])
+  parseOk(t, list, '()()', [{ v: [] }, { v: [] }])
+  parseOk(t, list, '(())', [{ v: [{ v: [] }] }])
 })
 
 tape('formatError', function (t) {
@@ -590,5 +590,5 @@ tape('formatError', function (t) {
   var source = 'not a'
   var error = a(source)
   t.equals(p.formatError(source, error),
-      "expected 'a' at character 0, got 'not a'")
+    "expected 'a' at character 0, got 'not a'")
 })
