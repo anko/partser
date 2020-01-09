@@ -1,3 +1,4 @@
+'use strict'
 var p = require('./index')
 var immutable = require('immutable')
 

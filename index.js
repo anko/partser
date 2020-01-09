@@ -1,3 +1,4 @@
+'use strict'
 var Partser = {}
 
 // For ensuring we have the right argument types
@@ -17,8 +18,6 @@ var skip = function (parser, next) {
 }
 
 Partser.Parser = (function () {
-  'use strict'
-
   // Base parser constructor.
   //
   // This just returns a callable parsing function with a `_` property that
