@@ -1,2 +1,0 @@
-Check if parsers can read the return values of their sub-parsers to modify
-their environment for further sub-parsers.
