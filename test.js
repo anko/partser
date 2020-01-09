@@ -2,9 +2,9 @@
 const p = require('./index')
 
 // Wrap tape to automatically t.end(), since our tests are all synchronous.
-const tape = function (name, testFunc) {
+const tape = (name, testFunc) => {
   const tapeModule = require('tape')
-  tapeModule(name, function (t) {
+  tapeModule(name, (t) => {
     testFunc(t)
     t.end()
   })
@@ -12,14 +12,14 @@ const tape = function (name, testFunc) {
 
 // Helpers for checking whether a parse succeeded as expected.  Nice as
 // adapters, in case the output format changes.
-const parseOk = function (t, parser, input, expectedValue) {
+const parseOk = (t, parser, input, expectedValue) => {
   t.deepEquals(parser(input), {
     status: true,
     value: expectedValue,
     index: input.length
   })
 }
-const parseFail = function (t, parser, input, index, expected) {
+const parseFail = (t, parser, input, index, expected) => {
   t.deepEquals(parser(input), {
     status: false,
     value: expected,
@@ -31,40 +31,40 @@ const parseFail = function (t, parser, input, index, expected) {
 // Basics
 //
 
-tape('string', function (t) {
+tape('string', (t) => {
   parseOk(t, p.string('a'), 'a', 'a')
 })
-tape('regex', function (t) {
+tape('regex', (t) => {
   parseOk(t, p.regex(/a+/), 'aa', 'aa')
   parseOk(t, p.regex(/(a+)b/, 1), 'aab', 'aa')
 })
-tape('all', function (t) {
+tape('all', (t) => {
   parseOk(t, p.all, 'aaa', 'aaa')
 })
-tape('any', function (t) {
+tape('any', (t) => {
   parseOk(t, p.any, 'a', 'a')
   parseOk(t, p.any, 'b', 'b')
 })
-tape('test', function (t) {
-  parseOk(t, p.test(function (x) { return x === 'a' }), 'a', 'a')
+tape('test', (t) => {
+  parseOk(t, p.test((x) => x === 'a'), 'a', 'a')
 })
-tape('eof', function (t) {
+tape('eof', (t) => {
   parseOk(t, p.eof, '', null)
 })
-tape('succeed', function (t) {
+tape('succeed', (t) => {
   parseOk(t, p.succeed('what'), '', 'what')
 })
-tape('fail', function (t) {
+tape('fail', (t) => {
   parseFail(t, p.fail('what'), 'a', 0, ['what'])
 })
-tape('index', function (t) {
+tape('index', (t) => {
   parseOk(t, p.index, '', 0)
 })
-tape('lcIndex', function (t) {
+tape('lcIndex', (t) => {
   parseOk(t, p.lcIndex, '', { line: 1, column: 1, offset: 0 })
 })
-tape('custom `p.any` parser', function (t) {
-  const customAny = p.custom(function (stream, i) {
+tape('custom `p.any` parser', (t) => {
+  const customAny = p.custom((stream, i) => {
     const remainingStream = stream.slice(i)
     if (remainingStream.length) {
       return { status: true, index: i + 1, value: stream.charAt(i) }
@@ -77,52 +77,50 @@ tape('custom `p.any` parser', function (t) {
   parseOk(t, p.seq(p.string('x'), customAny), 'xa', ['x', 'a'])
   parseFail(t, p.seq(p.string('x'), customAny), 'x', 1, ['any character'])
   parseFail(t, customAny, '', 0, ['any character'])
-  parseOk(t, p.map(customAny, function (x) { return x.toUpperCase() }),
+  parseOk(t, p.map(customAny, x => x.toUpperCase()),
     'a', 'A')
 })
 
-tape('custom parser that just calls `p.any`', function (t) {
-  const customAny = p.custom(function (stream, i) { return p.any(stream, i) })
+tape('custom parser that just calls `p.any`', (t) => {
+  const customAny = p.custom((stream, i) => p.any(stream, i))
   parseOk(t, customAny, 'a', 'a')
   parseOk(t, customAny, 'b', 'b')
   parseFail(t, p.seq(p.string('x'), customAny), 'x', 1, ['any character'])
   parseFail(t, customAny, '', 0, ['any character'])
-  parseOk(t, p.map(customAny, function (x) { return x.toUpperCase() }),
+  parseOk(t, p.map(customAny, x => x.toUpperCase()),
     'a', 'A')
 })
 
-tape('from: can be used to implement a recursive parser', function (t) {
+tape('from: can be used to implement a recursive parser', (t) => {
   const list = p.from(() =>
     p.map(
-      p.seq(p.string('('),
+      p.seq(
+        p.string('('),
         p.times(p.alt(list, p.string('x')), 0, Infinity),
         p.string(')')),
-      function ([before, mid, after]) {
-        return mid
-      })
+      ([before, mid, after]) => mid
+    )
   )
 
   parseOk(t, list, '(x(x))', ['x', ['x']])
 })
 
-tape('custom parsers can take whatever instead of strings', function (t) {
+tape('custom parsers can take whatever instead of strings', (t) => {
   // if you want them to!  You obviously can't expect this to work with the
   // built-in combinators though.
 
-  const compiler = p.custom(function (environment, i) {
+  const compiler = p.custom((environment, i) => {
     const input = environment.sourceCode
     const reducer = environment.reducer
 
     const whitespace = p.regex(/\s*/)
-    const lexeme = function (parser) {
-      return p.map(p.seq(parser, whitespace), function (result) {
-        return result[0]
-      })
+    const lexeme = (parser) => {
+      return p.map(p.seq(parser, whitespace), ([x, _]) => x)
     }
 
     const numbers = p.map(
       p.times(lexeme(p.regex(/\d+/)), 0, Infinity),
-      function (nums) { return nums.map(Number) })
+      nums => nums.map(Number))
 
     const result = numbers(input)
     return {
@@ -134,7 +132,7 @@ tape('custom parsers can take whatever instead of strings', function (t) {
 
   const input = {
     sourceCode: '1 2 3',
-    reducer: function (a, b) { return a + b }
+    reducer: (a, b) => a + b
   }
   t.deepEquals(compiler(input), {
     status: true,
@@ -147,19 +145,19 @@ tape('custom parsers can take whatever instead of strings', function (t) {
 // Combinators
 //
 
-tape('except', function (t) {
+tape('except', (t) => {
   const forbidden = p.regex(/[abc]/)
   const okChars = p.except(p.any, forbidden)
   parseFail(t, okChars, 'b', 0, ["something that is not 'b'"])
   parseFail(t, okChars, '', 0, ['any character (except /[abc]/)'])
   parseOk(t, okChars, 'x', 'x')
 
-  const needsEnv = p.map(p.string('a'), function (x, f) { return f(x) })
+  const needsEnv = p.map(p.string('a'), (x, f) => f(x))
 
   // As success case
-  ;(function () {
+  ;(() => {
     const withEnv = p.except(needsEnv, p.string('b'))
-    t.deepEquals(withEnv('a', 0, function (x) { return x.toUpperCase() }), {
+    t.deepEquals(withEnv('a', 0, x => x.toUpperCase()), {
       status: true,
       value: 'A',
       index: 1
@@ -167,9 +165,9 @@ tape('except', function (t) {
   })()
 
   // As failure case
-  ;(function () {
+  ;(() => {
     const withEnv = p.except(p.any, needsEnv)
-    t.deepEquals(withEnv('a', 0, function (x) { return x.toUpperCase() }), {
+    t.deepEquals(withEnv('a', 0, x => x.toUpperCase()), {
       status: false,
       value: ['something that is not \'A\''],
       index: 0
@@ -177,19 +175,19 @@ tape('except', function (t) {
   })()
 })
 
-tape('seq', function (t) {
-  const needsEnv = p.map(p.string('a'), function (x, f) { return f(x) })
+tape('seq', (t) => {
+  const needsEnv = p.map(p.string('a'), (x, f) => f(x))
   const withEnv = p.seq(p.any, needsEnv)
-  t.deepEquals(withEnv('xa', 0, function (x) { return x.toUpperCase() }), {
+  t.deepEquals(withEnv('xa', 0, x => x.toUpperCase()), {
     status: true,
     value: ['x', 'A'],
     index: 2
   }, 'passes env')
 })
 
-tape('subEnv can be modification of existing env', function (t) {
-  const needsEnv = p.map(p.string('a'), function (x, env) { return env })
-  const withEnv = p.subEnv(needsEnv, function (x) { return x + 'world' })
+tape('subEnv can be modification of existing env', (t) => {
+  const needsEnv = p.map(p.string('a'), (x, env) => env)
+  const withEnv = p.subEnv(needsEnv, x => x + 'world')
   t.deepEquals(withEnv('a', 0, 'Hello, '), {
     status: true,
     value: 'Hello, world',
@@ -197,10 +195,10 @@ tape('subEnv can be modification of existing env', function (t) {
   }, 'passes env')
 })
 
-tape('subEnv goes out of scope after', function (t) {
-  const needsEnv = p.map(p.string('a'), function (x, env) { return env })
-  const withEnv = p.subEnv(needsEnv, function (x) { return x + 'world' })
-  const sequence = p.seq(withEnv, p.map(p.string('x'), function (x, env) { return env }))
+tape('subEnv goes out of scope after', (t) => {
+  const needsEnv = p.map(p.string('a'), (x, env) => env)
+  const withEnv = p.subEnv(needsEnv, (x) => { return x + 'world' })
+  const sequence = p.seq(withEnv, p.map(p.string('x'), (x, env) => env))
   t.deepEquals(sequence('ax', 0, 'Hello, '), {
     status: true,
     value: ['Hello, world', 'Hello, '],
@@ -208,14 +206,14 @@ tape('subEnv goes out of scope after', function (t) {
   }, 'passes env')
 })
 
-tape('subEnv environments can be modified by map', function (t) {
-  const needsEnv = p.map(p.string('a'), function (x, env) {
+tape('subEnv environments can be modified by map', (t) => {
+  const needsEnv = p.map(p.string('a'), (x, env) => {
     env.ADDITION = true
     env.previous.ADDITION = true
     return env
   })
-  const withEnv = p.subEnv(needsEnv, function (x) { return { previous: x } })
-  const sequence = p.seq(withEnv, p.map(p.string('x'), function (x, env) { return env }))
+  const withEnv = p.subEnv(needsEnv, (x) => { return { previous: x } })
+  const sequence = p.seq(withEnv, p.map(p.string('x'), (x, env) => { return env }))
   t.deepEquals(sequence('ax', 0, {}), {
     status: true,
     value: [
@@ -231,7 +229,7 @@ tape('subEnv environments can be modified by map', function (t) {
   }, 'passes env')
 })
 
-tape('from: can get parser from environment', function (t) {
+tape('from: can get parser from environment', (t) => {
   const lookup = (name) => {
     return (env) => {
       if (!env) return null
@@ -250,7 +248,7 @@ tape('from: can get parser from environment', function (t) {
   const sequence = p.seq(
     p.subEnv(
       p.from(lookup('whatLetter')),
-      (env) => { return { previous: env, whatLetter: p.string('!') } }),
+      (env) => ({ previous: env, whatLetter: p.string('!') })),
     p.from(lookup('whatLetter')))
 
   t.deepEquals(sequence('a', 0, { whatLetter: p.string('a') }), {
@@ -266,7 +264,7 @@ tape('from: can get parser from environment', function (t) {
   }, 'reads using whatever parser the env contained')
 })
 
-tape('alt', function (t) {
+tape('alt', (t) => {
   const s = p.string
   const abc = p.alt(s('a'), s('b'), s('c'))
   parseOk(t, abc, 'a', 'a')
@@ -274,23 +272,23 @@ tape('alt', function (t) {
   parseOk(t, abc, 'c', 'c')
   parseFail(t, abc, 'd', 0, ["'c'", "'b'", "'a'"])
 
-  const needsEnv1 = p.map(p.string('a'), function (x, f) { return f(x) })
-  const needsEnv2 = p.map(p.string('b'), function (x, f) { return f(x) })
+  const needsEnv1 = p.map(p.string('a'), (x, f) => f(x))
+  const needsEnv2 = p.map(p.string('b'), (x, f) => f(x))
 
   const withEnv = p.alt(needsEnv1, needsEnv2)
-  t.deepEquals(withEnv('a', 0, function (x) { return x.toUpperCase() }), {
+  t.deepEquals(withEnv('a', 0, x => x.toUpperCase()), {
     status: true,
     value: 'A',
     index: 1
   }, 'passes env to first')
-  t.deepEquals(withEnv('b', 0, function (x) { return x.toUpperCase() }), {
+  t.deepEquals(withEnv('b', 0, x => x.toUpperCase()), {
     status: true,
     value: 'B',
     index: 1
   }, 'passes env to subsequent')
 })
 
-tape('times', function (t) {
+tape('times', (t) => {
   const notAtAll = p.times(p.string('a'), 0)
   const once = p.times(p.string('a'), 1)
   const maybeOnce = p.times(p.string('a'), 0, 1)
@@ -321,30 +319,30 @@ tape('times', function (t) {
   parseOk(t, asManyAsYouLike, '', [])
   parseOk(t, asManyAsYouLike, 'aaa', ['a', 'a', 'a'])
 
-  const needsEnv = p.map(p.string('a'), function (x, f) { return f(x) })
+  const needsEnv = p.map(p.string('a'), (x, f) => f(x))
   const withEnv = p.times(needsEnv, 0, Infinity)
-  t.deepEquals(withEnv('aaaaa', 0, function (x) { return x.toUpperCase() }), {
+  t.deepEquals(withEnv('aaaaa', 0, x => x.toUpperCase()), {
     status: true,
     value: ['A', 'A', 'A', 'A', 'A'],
     index: 5
   }, 'passes env to all')
 })
 
-tape('desc', function (t) {
+tape('desc', (t) => {
   const a = p.desc(p.string('a'), 'first letter of the alphabet')
   parseOk(t, a, 'a', 'a')
   parseFail(t, a, 'b', 0, ['first letter of the alphabet'])
 
-  const needsEnv = p.map(p.string('a'), function (x, f) { return f(x) })
+  const needsEnv = p.map(p.string('a'), (x, f) => f(x))
   const withEnv = p.desc(needsEnv, 'the letter "a"')
-  t.deepEquals(withEnv('a', 0, function (x) { return x.toUpperCase() }), {
+  t.deepEquals(withEnv('a', 0, x => x.toUpperCase()), {
     status: true,
     value: 'A',
     index: 1
   }, 'passes env')
 })
 
-tape('mark', function (t) {
+tape('mark', (t) => {
   const aMark = p.mark(p.regex(/a*/))
   parseOk(t, aMark, '', { value: '', start: 0, end: 0 })
   parseOk(t, aMark, 'a', { value: 'a', start: 0, end: 1 })
@@ -352,7 +350,7 @@ tape('mark', function (t) {
   parseFail(t, aMark, 'b', 0, ['EOF'])
 })
 
-tape('lcMark', function (t) {
+tape('lcMark', (t) => {
   const aMark = p.lcMark(p.regex(/[a\n]*/))
   parseOk(t, aMark, '', {
     value: '',
@@ -372,30 +370,27 @@ tape('lcMark', function (t) {
   parseFail(t, aMark, 'b', 0, ['EOF'])
 })
 
-tape('map', function (t) {
-  const abc = p.map(p.regex(/[abc]/), function (x) { return x.toUpperCase() })
+tape('map', (t) => {
+  const abc = p.map(p.regex(/[abc]/), x => x.toUpperCase())
   parseOk(t, abc, 'a', 'A')
   parseOk(t, abc, 'b', 'B')
   parseOk(t, abc, 'c', 'C')
   parseFail(t, abc, 'd', 0, ['/[abc]/'])
-  const withEnv = p.map(p.string('a'), function (x, f) { return f(x) })
-  t.deepEquals(withEnv('a', 0, function (x) { return x.toUpperCase() }), {
+  const withEnv = p.map(p.string('a'), (x, f) => f(x))
+  t.deepEquals(withEnv('a', 0, x => x.toUpperCase()), {
     status: true,
     value: 'A',
     index: 1
   }, 'passes env')
 })
 
-tape('recursive parser with env stack corresponding to list nesting', function (t) {
-  const between = function (parser, before, after) {
-    return p.map(p.seq(before, parser, after), function (r) { return r[1] })
-  }
+tape('recursive parser with env stack corresponding to list nesting', (t) => {
+  const between = (parser, before, after) =>
+    p.map(p.seq(before, parser, after), ([_, x]) => x)
 
   const atom = p.map(
     p.string('a'),
-    function (result, env) {
-      return env.value
-    })
+    (result, env) => env.value)
 
   const expression = p.from(() => p.alt(list, atom))
 
@@ -403,9 +398,7 @@ tape('recursive parser with env stack corresponding to list nesting', function (
   const list = p.from(() =>
     p.subEnv(
       between(listContent, p.string('('), p.string(')')),
-      function (env) {
-        return { value: env.value + 1 }
-      })
+      (env) => ({ value: env.value + 1 }))
   )
 
   t.deepEquals(expression('a', 0, { value: 0 }), {
@@ -426,22 +419,22 @@ tape('recursive parser with env stack corresponding to list nesting', function (
   }, 'env stack 2')
 })
 
-tape('chain', function (t) {
+tape('chain', (t) => {
   const a = p.regex(/[as]/)
-  const weapon = p.chain(a, function (result) {
+  const weapon = p.chain(a, (result) => {
     switch (result) {
-      case 'a' : return p.map(p.string('xe'), function (x) { return result + x })
-      case 's' : return p.map(p.string('pear'), function (x) { return result + x })
+      case 'a' : return p.map(p.string('xe'), x => result + x)
+      case 's' : return p.map(p.string('pear'), x => result + x)
     }
   })
   parseOk(t, weapon, 'axe', 'axe')
   parseOk(t, weapon, 'spear', 'spear')
   const withEnv = p.map(
-    p.chain(p.string('a'), function (result, env) { return env.chain() }),
-    function (x, env) { return env.after(x) })
+    p.chain(p.string('a'), (result, env) => env.chain()),
+    (x, env) => env.after(x))
   t.deepEquals(withEnv('ab', 0, {
-    chain: function () { return p.string('b') },
-    after: function (x) { return x.toUpperCase() }
+    chain: () => p.string('b'),
+    after: (x) => x.toUpperCase()
   }), {
     status: true,
     value: 'B',
@@ -453,7 +446,7 @@ tape('chain', function (t) {
 // p.replace & co
 //
 
-tape('replace', function (t) {
+tape('replace', (t) => {
   // Replacement changes the logic of one parser to the that of another.
   let a = p.string('a')
   let b = p.string('b')
@@ -481,7 +474,7 @@ tape('replace', function (t) {
   // with next, based on the result of the previous.
   a = p.string('a')
   b = p.string('b')
-  const acbd = p.chain(p.alt(a, b), function (result) {
+  const acbd = p.chain(p.alt(a, b), (result) => {
     if (result.match(/a+/)) {
       return p.string('c')
     } else {
@@ -495,7 +488,7 @@ tape('replace', function (t) {
   parseFail(t, acbd, 'aaad', 3, ["'c'"])
 })
 
-tape('replace with except', function (t) {
+tape('replace with except', (t) => {
   const a = p.string('a')
   const anyButA = p.except(p.any, a)
   p.replace(a, p.string('b'))
@@ -503,25 +496,24 @@ tape('replace with except', function (t) {
   parseFail(t, anyButA, 'b', 0, ["something that is not 'b'"])
 })
 
-tape('replace with p.alt', function (t) {
+tape('replace with p.alt', (t) => {
   const a = p.fail('defined later')
   const b = p.string('b')
   const aOrB = p.alt(a, b)
-  p.replace(a, p.map(p.string('c'), function () { return 'hi' }))
+  p.replace(a, p.map(p.string('c'), () => 'hi'))
   parseOk(t, aOrB, 'b', 'b')
   parseOk(t, aOrB, 'c', 'hi')
   parseFail(t, aOrB, 'a', 0, ["'b'", "'c'"])
 })
 
-tape('replace with p.alt', function (t) {
+tape('replace with p.alt', (t) => {
   const listParserLater = p.fail('implemented later')
   const expression = p.alt(
     listParserLater,
     p.string('a'))
 
-  const between = function (parser, before, after) {
-    return p.map(p.seq(before, parser, after), function (r) { return r[1] })
-  }
+  const between = (parser, before, after) =>
+    p.map(p.seq(before, parser, after), ([_, x]) => x)
 
   const listOpener = p.string('(')
   const listTerminator = p.string(')')
@@ -534,7 +526,7 @@ tape('replace with p.alt', function (t) {
   parseOk(t, expression, '()', [])
 })
 
-tape('clone', function (t) {
+tape('clone', (t) => {
   let a = p.string('a')
 
   // Cloning an object creates a parser which has a separate identity but the
@@ -564,14 +556,14 @@ tape('clone', function (t) {
   parseOk(t, a, 'b', 'b')
 })
 
-tape('self-reference', function (t) {
+tape('self-reference', (t) => {
   const parenOpen = p.string('(')
   const parenClose = p.string(')')
   const list = p.fail('defined later')
   p.replace(list,
     p.times(p.map(
       p.seq(parenOpen, list, parenClose),
-      function (x) { return { v: x[1] } }),
+      ([_, x]) => ({ v: x })),
     0, Infinity))
 
   parseOk(t, list, '()', [{ v: [] }])
@@ -579,7 +571,7 @@ tape('self-reference', function (t) {
   parseOk(t, list, '(())', [{ v: [{ v: [] }] }])
 })
 
-tape('formatError', function (t) {
+tape('formatError', (t) => {
   const a = p.string('a')
   const source = 'not a'
   const error = a(source)
