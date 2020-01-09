@@ -16,7 +16,7 @@ You could write this:
 
 <!-- !test program
 # Change requires to the correct import, and strip the final newline.
-sed $"s/require('partser')/require('.\\/index')/g" \
+sed "s/require('partser')/require('.\\/index.js')/g" \
 | node \
 | head -c -1 -->
 
@@ -58,12 +58,8 @@ Running it produces this:
 <!-- !test out quick example -->
 
 ```
-{ status: true,
-  index: 4,
-  value: { type: 'string', contents: 'hi' } }
-{ status: true,
-  index: 4,
-  value: { type: 'string', contents: 'hi' } }
+{ status: true, index: 4, value: { type: 'string', contents: 'hi' } }
+{ status: true, index: 4, value: { type: 'string', contents: 'hi' } }
 ```
 
 Note how the `quote` parser was `replace`'d partway through with a parser that
