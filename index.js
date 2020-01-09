@@ -193,38 +193,43 @@ Partser.Parser = (function () {
   //
 
   Partser.times = function (parser, min, max) {
-    if (arguments.length < 3) max = min
-    const self = parser
+    if (max === undefined) max = min
 
-    assertParser(self)
+    assertParser(parser)
     assertNumber(min)
     assertNumber(max)
 
     return Parser(function (stream, i, env) {
-      const accum = []
-      let result
-      let prevResult
-      let times
+      const successes = []
+      let times = 0
+      let index = i
+      let previousResult
 
-      for (times = 0; times < min; times += 1) {
-        result = self._(stream, i, env)
-        prevResult = mergeReplies(result, prevResult)
+      // First require successes until `min`.  In other words, return failure
+      // if we mismatch before reaching `min` times.
+      for (; times < min; ++times) {
+        const result = parser._(stream, index, env)
+        const mergedResult = mergeReplies(result, previousResult)
         if (result.status) {
-          i = result.index
-          accum.push(result.value)
-        } else return prevResult
+          previousResult = mergedResult
+          index = result.index
+          successes.push(result.value)
+        } else return mergedResult
       }
 
-      for (; times < max; times += 1) {
-        result = self._(stream, i, env)
-        prevResult = mergeReplies(result, prevResult)
+      // Then allow successes up until `max`.  In other words, just stop on
+      // mismatch, and return a success with whatever we've got by then.
+      for (; times < max; ++times) {
+        const result = parser._(stream, index, env)
+        const mergedResult = mergeReplies(result, previousResult)
         if (result.status) {
-          i = result.index
-          accum.push(result.value)
+          previousResult = mergedResult
+          index = result.index
+          successes.push(result.value)
         } else break
       }
 
-      return mergeReplies(makeSuccess(i, accum), prevResult)
+      return makeSuccess(index, successes)
     })
   }
 
