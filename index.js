@@ -148,7 +148,7 @@ Partser.Parser = (function () {
     })
   }
 
-  const seq = Partser.seq = function () {
+  Partser.seq = function () {
     const parsers = [].slice.call(arguments)
     const numParsers = parsers.length
 
@@ -172,7 +172,7 @@ Partser.Parser = (function () {
   const seqMap = function () {
     const args = [].slice.call(arguments)
     const mapper = args.pop()
-    return Partser.map(seq.apply(null, args), function (results) {
+    return Partser.map(Partser.seq.apply(null, args), function (results) {
       return mapper.apply(null, results)
     })
   }
@@ -250,15 +250,19 @@ Partser.Parser = (function () {
   }
 
   Partser.mark = function (parser) {
-    return seqMap(index, parser, index, function (start, value, end) {
-      return { start: start, value: value, end: end }
-    })
+    return seqMap(
+      Partser.index, parser, Partser.index,
+      function (start, value, end) {
+        return { start: start, value: value, end: end }
+      })
   }
 
   Partser.lcMark = function (parser) {
-    return seqMap(lcIndex, parser, lcIndex, function (start, value, end) {
-      return { start: start, value: value, end: end }
-    })
+    return seqMap(
+      Partser.lcIndex, parser, Partser.lcIndex,
+      function (start, value, end) {
+        return { start: start, value: value, end: end }
+      })
   }
 
   Partser.desc = function (parser, expected) {
@@ -346,11 +350,11 @@ Partser.Parser = (function () {
     })
   }
 
-  const index = Partser.index = Parser(function (stream, i) {
+  Partser.index = Parser(function (stream, i) {
     return makeSuccess(i, i)
   })
 
-  const lcIndex = Partser.lcIndex = Parser(function (stream, i) {
+  Partser.lcIndex = Parser(function (stream, i) {
     // Like the usual `index` function, but emitting an object that contains
     // line and column indices in addition to the character-based one.
 
