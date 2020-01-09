@@ -1,8 +1,8 @@
 'use strict'
-var Partser = {}
+const Partser = {}
 
 // For ensuring we have the right argument types
-var assert = function (name, check) {
+const assert = function (name, check) {
   return function (input) {
     if (!check(input)) throw new Error('Not a ' + name + ': ' + input)
   }
@@ -13,7 +13,7 @@ const assertRegexp = assert('regex', (x) => x instanceof RegExp)
 const assertFunction = assert('function', (x) => typeof x === 'function')
 const assertString = assert('string', (x) => typeof x === 'string')
 
-var skip = function (parser, next) {
+const skip = function (parser, next) {
   return Partser.map(Partser.seq(parser, next), function (r) { return r[0] })
 }
 
@@ -25,7 +25,7 @@ Partser.Parser = (function () {
   // without affecting the parser object's identity.
   function Parser (action) {
     // This is the external interface to any parser.
-    var instance = function (stream, index, env) {
+    const instance = function (stream, index, env) {
       index = index || 0
 
       return skip(instance, Partser.eof)._(stream, index, env)
@@ -50,7 +50,7 @@ Partser.Parser = (function () {
     }
   }
 
-  var mergeReplies = (function () {
+  const mergeReplies = (function () {
     function furthest (result) { return result.status ? -1 : result.index }
     function expected (result) { return result.status ? [] : result.value }
 
@@ -76,12 +76,12 @@ Partser.Parser = (function () {
   }
 
   function formatGot (stream, error) {
-    var i = error.index
+    const i = error.index
 
     if (i === stream.length) return ', got the end of the stream'
 
-    var prefix = (i > 0 ? "'..." : "'")
-    var suffix = (stream.length - i > 12 ? "...'" : "'")
+    const prefix = (i > 0 ? "'..." : "'")
+    const suffix = (stream.length - i > 12 ? "...'" : "'")
 
     return ' at character ' + i + ', got ' + prefix + stream.slice(i, i + 12) + suffix
   }
@@ -94,7 +94,7 @@ Partser.Parser = (function () {
     assertParser(allowed)
     assertParser(forbidden)
     return Parser(function (stream, i, env) {
-      var forbiddenResult = forbidden._(stream, i, env)
+      const forbiddenResult = forbidden._(stream, i, env)
       if (forbiddenResult.status) {
         return makeFailure(i, "something that is not '" +
             forbiddenResult.value + "'")
@@ -108,7 +108,7 @@ Partser.Parser = (function () {
         // Ensure that it's clear to users that they really should use `desc`
         // to give instances of this parser a clearer name.
       } else {
-        var allowedResult = allowed._(stream, i, env)
+        const allowedResult = allowed._(stream, i, env)
         if (allowedResult.status) {
           return allowedResult
         } else {
@@ -138,17 +138,17 @@ Partser.Parser = (function () {
   }
 
   // [Parser a] -> Parser [a]
-  var seq = Partser.seq = function () {
-    var parsers = [].slice.call(arguments)
-    var numParsers = parsers.length
+  const seq = Partser.seq = function () {
+    const parsers = [].slice.call(arguments)
+    const numParsers = parsers.length
 
     parsers.forEach(assertParser)
 
     return Parser(function (stream, i, env) {
-      var result
-      var accum = new Array(numParsers)
+      let result
+      const accum = new Array(numParsers)
 
-      for (var j = 0; j < numParsers; j += 1) {
+      for (let j = 0; j < numParsers; j += 1) {
         result = mergeReplies(parsers[j]._(stream, i, env), result)
         if (!result.status) return result
         accum[j] = result.value
@@ -159,9 +159,9 @@ Partser.Parser = (function () {
     })
   }
 
-  var seqMap = function () {
-    var args = [].slice.call(arguments)
-    var mapper = args.pop()
+  const seqMap = function () {
+    const args = [].slice.call(arguments)
+    const mapper = args.pop()
     return Partser.map(seq.apply(null, args), function (results) {
       return mapper.apply(null, results)
     })
@@ -172,15 +172,15 @@ Partser.Parser = (function () {
   }
 
   Partser.alt = function () {
-    var parsers = [].slice.call(arguments)
-    var numParsers = parsers.length
+    const parsers = [].slice.call(arguments)
+    const numParsers = parsers.length
     if (numParsers === 0) return fail('zero alternates')
 
     parsers.forEach(assertParser)
 
     return Parser(function (stream, i, env) {
-      var result
-      for (var j = 0; j < parsers.length; j += 1) {
+      let result
+      for (let j = 0; j < parsers.length; j += 1) {
         result = mergeReplies(parsers[j]._(stream, i, env), result)
         if (result.status) return result
       }
@@ -194,18 +194,19 @@ Partser.Parser = (function () {
 
   Partser.times = function (parser, min, max) {
     if (arguments.length < 3) max = min
-    var self = parser
+    const self = parser
 
     assertParser(self)
     assertNumber(min)
     assertNumber(max)
 
     return Parser(function (stream, i, env) {
-      var accum = []
-      var result
-      var prevResult
+      const accum = []
+      let result
+      let prevResult
+      let times
 
-      for (var times = 0; times < min; times += 1) {
+      for (times = 0; times < min; times += 1) {
         result = self._(stream, i, env)
         prevResult = mergeReplies(result, prevResult)
         if (result.status) {
@@ -230,9 +231,9 @@ Partser.Parser = (function () {
   Partser.map = function (parser, fn) {
     assertFunction(fn)
 
-    var self = parser
+    const self = parser
     return Parser(function (stream, i, env) {
-      var result = self._(stream, i, env)
+      const result = self._(stream, i, env)
       if (!result.status) return result
       return mergeReplies(makeSuccess(result.index, fn(result.value, env)), result)
     })
@@ -251,9 +252,9 @@ Partser.Parser = (function () {
   }
 
   Partser.desc = function (parser, expected) {
-    var self = parser
+    const self = parser
     return Parser(function (stream, i, env) {
-      var reply = self._(stream, i, env)
+      const reply = self._(stream, i, env)
       if (!reply.status) reply.value = [expected]
       return reply
     })
@@ -264,13 +265,13 @@ Partser.Parser = (function () {
   //
 
   Partser.string = function (str) {
-    var len = str.length
-    var expected = "'" + str + "'"
+    const len = str.length
+    const expected = "'" + str + "'"
 
     assertString(str)
 
     return Parser(function (stream, i) {
-      var head = stream.slice(i, i + len)
+      const head = stream.slice(i, i + len)
 
       if (head === str) {
         return makeSuccess(i + len, head)
@@ -284,16 +285,16 @@ Partser.Parser = (function () {
     assertRegexp(re)
     if (group) assertNumber(group)
 
-    var anchored = RegExp('^(?:' + re.source + ')', ('' + re).slice(('' + re).lastIndexOf('/') + 1))
-    var expected = '' + re
+    const anchored = RegExp('^(?:' + re.source + ')', ('' + re).slice(('' + re).lastIndexOf('/') + 1))
+    const expected = '' + re
     if (group == null) group = 0
 
     return Parser(function (stream, i) {
-      var match = anchored.exec(stream.slice(i))
+      const match = anchored.exec(stream.slice(i))
 
       if (match) {
-        var fullMatch = match[0]
-        var groupMatch = match[group]
+        const fullMatch = match[0]
+        const groupMatch = match[group]
         if (groupMatch != null) return makeSuccess(i + fullMatch.length, groupMatch)
       }
 
@@ -307,7 +308,7 @@ Partser.Parser = (function () {
     })
   }
 
-  var fail = Partser.fail = function (expected) {
+  const fail = Partser.fail = function (expected) {
     return Parser(function (stream, i) { return makeFailure(i, expected) })
   }
 
@@ -331,7 +332,7 @@ Partser.Parser = (function () {
     assertFunction(predicate)
 
     return Parser(function (stream, i) {
-      var char = stream.charAt(i)
+      const char = stream.charAt(i)
       if (i < stream.length && predicate(char)) {
         return makeSuccess(i + 1, char)
       } else {
@@ -346,7 +347,7 @@ Partser.Parser = (function () {
       desc = undefined
     }
 
-    var parser = Parser(function (stream, i) {
+    let parser = Parser(function (stream, i) {
       parser._ = f()._
       return parser._(stream, i)
     })
@@ -356,19 +357,19 @@ Partser.Parser = (function () {
     return parser
   }
 
-  var index = Partser.index = Parser(function (stream, i) {
+  const index = Partser.index = Parser(function (stream, i) {
     return makeSuccess(i, i)
   })
 
-  var lcIndex = Partser.lcIndex = Parser(function (stream, i) {
+  const lcIndex = Partser.lcIndex = Parser(function (stream, i) {
     // Like the usual `index` function, but emitting an object that contains
     // line and column indices in addition to the character-based one.
 
-    var lines = stream.slice(0, i).split('\n')
+    const lines = stream.slice(0, i).split('\n')
 
     // Unlike the character offset, lines and columns are 1-based.
-    var lineWeAreUpTo = lines.length
-    var columnWeAreUpTo = lines[lines.length - 1].length + 1
+    const lineWeAreUpTo = lines.length
+    const columnWeAreUpTo = lines[lines.length - 1].length + 1
 
     return makeSuccess(i, {
       offset: i,
@@ -393,11 +394,11 @@ Partser.Parser = (function () {
 
   Partser.chain = function (parser, f) {
     assertParser(parser)
-    var self = parser
+    const self = parser
     return Parser(function (stream, i, env) {
-      var result = self._(stream, i, env)
+      const result = self._(stream, i, env)
       if (!result.status) return result
-      var nextParser = f(result.value, env)
+      const nextParser = f(result.value, env)
       return mergeReplies(nextParser._(stream, result.index, env), result)
     })
   }
