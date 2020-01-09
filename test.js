@@ -192,88 +192,84 @@ tape('seq', function (t) {
   }, 'passes env')
 })
 
-tape('seqInto', function (t) {
-  var a = p.map(p.any, function (result, env) {
-    var newEnv = env.set('value', env.get('value') + 1)
-    return {
-      result: newEnv.get('value'),
-      env: newEnv
-    }
-  })
-
-  var withEnv = p.map(
-    p.seqInto([a, a], function (parser, stream, i, env, previousResult) {
-      env = previousResult ? previousResult.value.env : env
-      return parser._(stream, i, env)
-    }),
-    function (results) {
-      return results.map(function (x) { return x.result })
-    })
-  t.deepEquals(withEnv('ab', 0, immutable.Map({ value: 0 })), {
+tape('subEnv can be modification of existing env', function (t) {
+  var needsEnv = p.map(p.string('a'), function (x, env) { return env })
+  var withEnv = p.subEnv(needsEnv, function (x) { return x + 'world' })
+  t.deepEquals(withEnv('a', 0, 'Hello, '), {
     status: true,
-    value: [ 1, 2 ],
+    value: 'Hello, world',
+    index: 1
+  }, 'passes env')
+})
+
+tape('subEnv goes out of scope after', function (t) {
+  var needsEnv = p.map(p.string('a'), function (x, env) { return env })
+  var withEnv = p.subEnv(needsEnv, function (x) { return x + 'world' })
+  var sequence = p.seq(withEnv, p.map(p.string('x'), function (x, env) { return env }))
+  t.deepEquals(sequence('ax', 0, 'Hello, '), {
+    status: true,
+    value: [ 'Hello, world', 'Hello, ' ],
     index: 2
   }, 'passes env')
 })
 
-tape('parser which sub-parsers can modify env passed to next', function (t) {
-  var envInto = function (parserA, parserB) {
-    return p.chain(parserA, function (result, env) {
-      env = result.env || env
-      return p.custom(function (stream, index) {
-        var r2 = parserB(stream, index, env)
-        r2.value = [ result, r2.value ]
-        return r2
-      })
-    })
-  }
-  var a = p.map(p.any, function (result, env) {
-    var newEnv = env.set('value', env.get('value') + 1)
-    return {
-      result: newEnv.get('value'),
-      env: newEnv
-    }
+tape('subEnv environments can be modified by map', function (t) {
+  var needsEnv = p.map(p.string('a'), function (x, env) {
+    env.ADDITION = true
+    env.previous.ADDITION = true
+    return env
   })
-
-  var withEnv = p.map(
-    envInto(a, a),
-    function (x) { return x.map(function (y) { return y.result }) })
-  t.deepEquals(withEnv('ab', 0, immutable.Map({ value: 0 })), {
+  var withEnv = p.subEnv(needsEnv, function (x) { return { previous: x } })
+  var sequence = p.seq(withEnv, p.map(p.string('x'), function (x, env) { return env }))
+  t.deepEquals(sequence('ax', 0, {}), {
     status: true,
-    value: [ 1, 2 ],
+    value: [
+      {
+        previous: { ADDITION: true },
+        ADDITION: true
+      },
+      {
+        ADDITION: true
+      }
+    ],
     index: 2
-  }, 'works')
+  }, 'passes env')
 })
 
-tape('many-parser which sub-parsers can modify env passed to next', function (t) {
-  var envInto = function (parserA, parserB) {
-    return p.chain(parserA, function (result, env) {
-      env = result.env || env
-      return p.custom(function (stream, index) {
-        var r2 = parserB(stream, index, env)
-        r2.value = [ result, r2.value ]
-        return r2
-      })
-    })
-  }
-  var a = p.map(p.any, function (result, env) {
-    var newEnv = env.set('value', env.get('value') + 1)
-    return {
-      result: newEnv.get('value'),
-      env: newEnv
+tape('fromEnv can call parsers from environment', function (t) {
+  let lookup = (name) => {
+    return (env) => {
+      if (!env) return null
+      if (env[name]) return env[name]
+      else {
+        if (env.previous) return lookup(env.previous, name)
+        else return null
+      }
     }
-  })
+  }
 
-  var withEnv = p.map(
-    envInto(a, a),
-    function (x) { return x.map(function (y) { return y.result }) })
-  t.deepEquals(withEnv('ab', 0, immutable.Map({ value: 0 })), {
+  // Sequence of 2 parsers that load what parser to use from the whatLetter
+  // property of the environment.  The first one is wrapped in a subEnv that
+  // overrides the whatLetter parser to something else.  The override is only
+  // in effect for the first one.
+  let sequence = p.seq(
+    p.subEnv(
+      p.fromEnv(lookup('whatLetter')),
+      (env) => { return { previous: env, whatLetter: p.string('!') } }),
+    p.fromEnv(lookup('whatLetter')))
+
+  t.deepEquals(sequence('a', 0, { whatLetter: p.string('a') }), {
+    status: false,
+    value: [ "'!'" ],
+    index: 0
+  }, 'the originally specified parser has been overridden')
+
+  t.deepEquals(sequence('!a', 0, { whatLetter: p.string('a') }), {
     status: true,
-    value: [ 1, 2 ],
+    value: [ '!', 'a' ],
     index: 2
-  }, 'works')
+  }, 'reads using whatever parser the env contained')
 })
-
 
 tape('alt', function (t) {
   var s = p.string
@@ -442,50 +438,6 @@ tape('recursive parser with env stack corresponding to list nesting', function (
     index: 6
   }, 'env stack 2')
 })
-
-// tape('parser that lets its sub-parsers modify the env', function (t) {
-//
-//   var envInto = function (parser-a, parser-b) {
-//     return p.chain(parser-a, function (result, env) {
-//       env = result.env || env
-//       return p.custom(function (stream, index) {
-//         return parser-b(stream, index, env)
-//       })
-//     })
-//   }
-//
-//   var number = p.map(
-//     p.regex(/\s*(\d+)\s*/, 1),
-//     function (result, env) {
-//       return {
-//         result: result,
-//         env: env.set('sum', env.get('sum') + Number(result))
-//       }
-//     })
-//
-//   // Seq combinator, but such that sub-parsers are expected to return objects
-//   // of the form { result, env }, where the env is passed as the env to the
-//   // next sub-parser.
-//   var seqEnv = function () {
-//     // Wrap each input parser in a parser that captures
-//     var parsers = [].slice.call(arguments).map(function (parser) {
-//     })
-//
-//     var previousEnv = null
-//     p.seq(
-//   }
-//
-//   var sum = p.map(
-//     p.times(number, 0, Infinity),
-//     function (results, env) {
-//       console.log(results)
-//     })
-//   t.deepEquals(sum('1 2 3', 0, immutable.Map({ sum: 0 })), {
-//     status: true,
-//     value: 6,
-//     index: 5
-//   }, 'sum')
-// })
 
 tape('chain', function (t) {
   var a = p.regex(/[as]/)

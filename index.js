@@ -119,22 +119,21 @@ Partser.Parser = (function () {
     })
   }
 
-  Partser.seqInto = function (parsers, handle) {
-    var numParsers = parsers.length
-    parsers.forEach(assertParser)
-
+  // deriveEnv is a user-provided function that creates a new environment based
+  // on the existing one.
+  Partser.subEnv = function (baseParser, deriveEnv) {
+    assertFunction(deriveEnv)
     return Parser(function (stream, i, env) {
-      var result
-      var accum = new Array(numParsers)
+      let newEnv = deriveEnv(env)
+      return baseParser._(stream, i, newEnv)
+    })
+  }
 
-      for (var j = 0; j < numParsers; j += 1) {
-        result = mergeReplies(handle(parsers[j], stream, i, env, result), result)
-        if (!result.status) return result
-        accum[j] = result.value
-        i = result.index
-      }
-
-      return mergeReplies(makeSuccess(i, accum), result)
+  Partser.fromEnv = function (lookup) {
+    assertFunction(lookup)
+    return Parser(function (stream, i, env) {
+      let foundParser = lookup(env)
+      return foundParser._(stream, i, env)
     })
   }
 
