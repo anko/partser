@@ -140,7 +140,7 @@ Partser.Parser = (function () {
     })
   }
 
-  Partser.fromEnv = function (lookup) {
+  Partser.from = function (lookup) {
     assertFunction(lookup)
     return Parser(function (stream, i, env) {
       const foundParser = lookup(env)
@@ -344,22 +344,6 @@ Partser.Parser = (function () {
         return makeFailure(i, 'a character matching ' + predicate)
       }
     })
-  }
-
-  Partser.lazy = function (desc, f) {
-    if (arguments.length < 2) {
-      f = desc
-      desc = undefined
-    }
-
-    let parser = Parser(function (stream, i) {
-      parser._ = f()._
-      return parser._(stream, i)
-    })
-
-    if (desc) parser = parser.desc(desc)
-
-    return parser
   }
 
   const index = Partser.index = Parser(function (stream, i) {

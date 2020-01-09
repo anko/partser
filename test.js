@@ -91,20 +91,16 @@ tape('custom parser that just calls `p.any`', function (t) {
     'a', 'A')
 })
 
-tape('custom-wrapping a recursive parser', function (t) {
-  const listLater = p.fail('defined later')
-  const list = p.map(
-    p.seq(p.string('('),
-      p.times(p.alt(listLater, p.string('x')), 0, Infinity),
-      p.string(')')),
-    function ([before, mid, after]) {
-      return mid
-    })
-
-  const customWrappedList = p.custom(function (stream, i, env) {
-    return list._(stream, i, env)
-  })
-  p.replace(listLater, customWrappedList)
+tape('from: can be used to implement a recursive parser', function (t) {
+  const list = p.from(() =>
+    p.map(
+      p.seq(p.string('('),
+        p.times(p.alt(list, p.string('x')), 0, Infinity),
+        p.string(')')),
+      function ([before, mid, after]) {
+        return mid
+      })
+  )
 
   parseOk(t, list, '(x(x))', ['x', ['x']])
 })
@@ -235,7 +231,7 @@ tape('subEnv environments can be modified by map', function (t) {
   }, 'passes env')
 })
 
-tape('fromEnv can call parsers from environment', function (t) {
+tape('from: can get parser from environment', function (t) {
   const lookup = (name) => {
     return (env) => {
       if (!env) return null
@@ -253,9 +249,9 @@ tape('fromEnv can call parsers from environment', function (t) {
   // in effect for the first one.
   const sequence = p.seq(
     p.subEnv(
-      p.fromEnv(lookup('whatLetter')),
+      p.from(lookup('whatLetter')),
       (env) => { return { previous: env, whatLetter: p.string('!') } }),
-    p.fromEnv(lookup('whatLetter')))
+    p.from(lookup('whatLetter')))
 
   t.deepEquals(sequence('a', 0, { whatLetter: p.string('a') }), {
     status: false,
@@ -401,18 +397,16 @@ tape('recursive parser with env stack corresponding to list nesting', function (
       return env.value
     })
 
-  const listLater = p.fail('implemented later')
-  const expression = p.alt(
-    listLater,
-    atom)
+  const expression = p.from(() => p.alt(list, atom))
 
   const listContent = p.times(expression, 0, Infinity)
-  const list = p.subEnv(
-    between(listContent, p.string('('), p.string(')')),
-    function (env) {
-      return { value: env.value + 1 }
-    })
-  p.replace(listLater, list)
+  const list = p.from(() =>
+    p.subEnv(
+      between(listContent, p.string('('), p.string(')')),
+      function (env) {
+        return { value: env.value + 1 }
+      })
+  )
 
   t.deepEquals(expression('a', 0, { value: 0 }), {
     status: true,
