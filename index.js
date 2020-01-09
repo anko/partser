@@ -33,7 +33,7 @@ const Parser = Partser.Parser = (behaviour) => {
   // parser function itself actually parses for the base behaviour `_` followed
   // by `eof` (end of input).  Internally, we never use this surface API.
   //
-  const instance = (stream, index = 0, env) =>
+  const instance = (stream, env, index = 0) =>
     skip(instance, Partser.eof)._(stream, index, env)
   instance._ = behaviour
   return instance

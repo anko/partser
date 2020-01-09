@@ -82,7 +82,7 @@ tape('custom `p.any` parser', (t) => {
 })
 
 tape('custom parser that just calls `p.any`', (t) => {
-  const customAny = p.custom((stream, i) => p.any(stream, i))
+  const customAny = p.custom((...args) => p.any._(...args))
   parseOk(t, customAny, 'a', 'a')
   parseOk(t, customAny, 'b', 'b')
   parseFail(t, p.seq(p.string('x'), customAny), 'x', 1, ['any character'])
@@ -157,7 +157,7 @@ tape('except', (t) => {
   // As success case
   ;(() => {
     const withEnv = p.except(needsEnv, p.string('b'))
-    t.deepEquals(withEnv('a', 0, x => x.toUpperCase()), {
+    t.deepEquals(withEnv('a', x => x.toUpperCase()), {
       status: true,
       value: 'A',
       index: 1
@@ -167,7 +167,7 @@ tape('except', (t) => {
   // As failure case
   ;(() => {
     const withEnv = p.except(p.any, needsEnv)
-    t.deepEquals(withEnv('a', 0, x => x.toUpperCase()), {
+    t.deepEquals(withEnv('a', x => x.toUpperCase()), {
       status: false,
       value: ['something that is not \'A\''],
       index: 0
@@ -178,7 +178,7 @@ tape('except', (t) => {
 tape('seq', (t) => {
   const needsEnv = p.map(p.string('a'), (x, f) => f(x))
   const withEnv = p.seq(p.any, needsEnv)
-  t.deepEquals(withEnv('xa', 0, x => x.toUpperCase()), {
+  t.deepEquals(withEnv('xa', x => x.toUpperCase()), {
     status: true,
     value: ['x', 'A'],
     index: 2
@@ -188,7 +188,7 @@ tape('seq', (t) => {
 tape('subEnv can be modification of existing env', (t) => {
   const needsEnv = p.map(p.string('a'), (x, env) => env)
   const withEnv = p.subEnv(needsEnv, x => x + 'world')
-  t.deepEquals(withEnv('a', 0, 'Hello, '), {
+  t.deepEquals(withEnv('a', 'Hello, '), {
     status: true,
     value: 'Hello, world',
     index: 1
@@ -199,7 +199,7 @@ tape('subEnv goes out of scope after', (t) => {
   const needsEnv = p.map(p.string('a'), (x, env) => env)
   const withEnv = p.subEnv(needsEnv, (x) => { return x + 'world' })
   const sequence = p.seq(withEnv, p.map(p.string('x'), (x, env) => env))
-  t.deepEquals(sequence('ax', 0, 'Hello, '), {
+  t.deepEquals(sequence('ax', 'Hello, '), {
     status: true,
     value: ['Hello, world', 'Hello, '],
     index: 2
@@ -214,7 +214,7 @@ tape('subEnv environments can be modified by map', (t) => {
   })
   const withEnv = p.subEnv(needsEnv, (x) => { return { previous: x } })
   const sequence = p.seq(withEnv, p.map(p.string('x'), (x, env) => { return env }))
-  t.deepEquals(sequence('ax', 0, {}), {
+  t.deepEquals(sequence('ax', {}), {
     status: true,
     value: [
       {
@@ -251,13 +251,13 @@ tape('from: can get parser from environment', (t) => {
       (env) => ({ previous: env, whatLetter: p.string('!') })),
     p.from(lookup('whatLetter')))
 
-  t.deepEquals(sequence('a', 0, { whatLetter: p.string('a') }), {
+  t.deepEquals(sequence('a', { whatLetter: p.string('a') }), {
     status: false,
     value: ["'!'"],
     index: 0
   }, 'the originally specified parser has been overridden')
 
-  t.deepEquals(sequence('!a', 0, { whatLetter: p.string('a') }), {
+  t.deepEquals(sequence('!a', { whatLetter: p.string('a') }), {
     status: true,
     value: ['!', 'a'],
     index: 2
@@ -276,12 +276,12 @@ tape('alt', (t) => {
   const needsEnv2 = p.map(p.string('b'), (x, f) => f(x))
 
   const withEnv = p.alt(needsEnv1, needsEnv2)
-  t.deepEquals(withEnv('a', 0, x => x.toUpperCase()), {
+  t.deepEquals(withEnv('a', x => x.toUpperCase()), {
     status: true,
     value: 'A',
     index: 1
   }, 'passes env to first')
-  t.deepEquals(withEnv('b', 0, x => x.toUpperCase()), {
+  t.deepEquals(withEnv('b', x => x.toUpperCase()), {
     status: true,
     value: 'B',
     index: 1
@@ -321,7 +321,7 @@ tape('times', (t) => {
 
   const needsEnv = p.map(p.string('a'), (x, f) => f(x))
   const withEnv = p.times(needsEnv, 0, Infinity)
-  t.deepEquals(withEnv('aaaaa', 0, x => x.toUpperCase()), {
+  t.deepEquals(withEnv('aaaaa', x => x.toUpperCase()), {
     status: true,
     value: ['A', 'A', 'A', 'A', 'A'],
     index: 5
@@ -335,7 +335,7 @@ tape('desc', (t) => {
 
   const needsEnv = p.map(p.string('a'), (x, f) => f(x))
   const withEnv = p.desc(needsEnv, 'the letter "a"')
-  t.deepEquals(withEnv('a', 0, x => x.toUpperCase()), {
+  t.deepEquals(withEnv('a', x => x.toUpperCase()), {
     status: true,
     value: 'A',
     index: 1
@@ -377,7 +377,7 @@ tape('map', (t) => {
   parseOk(t, abc, 'c', 'C')
   parseFail(t, abc, 'd', 0, ['/[abc]/'])
   const withEnv = p.map(p.string('a'), (x, f) => f(x))
-  t.deepEquals(withEnv('a', 0, x => x.toUpperCase()), {
+  t.deepEquals(withEnv('a', x => x.toUpperCase()), {
     status: true,
     value: 'A',
     index: 1
@@ -401,18 +401,18 @@ tape('recursive parser with env stack corresponding to list nesting', (t) => {
       (env) => ({ value: env.value + 1 }))
   )
 
-  t.deepEquals(expression('a', 0, { value: 0 }), {
+  t.deepEquals(expression('a', { value: 0 }), {
     status: true,
     value: 0,
     index: 1
   }, 'env stack 0')
-  t.deepEquals(expression('(a)', 0, { value: 0 }), {
+  t.deepEquals(expression('(a)', { value: 0 }), {
     status: true,
     value: [1],
     index: 3
   }, 'env stack 1')
 
-  t.deepEquals(expression('(a(a))', 0, { value: 0 }), {
+  t.deepEquals(expression('(a(a))', { value: 0 }), {
     status: true,
     value: [1, [2]],
     index: 6
@@ -432,7 +432,7 @@ tape('chain', (t) => {
   const withEnv = p.map(
     p.chain(p.string('a'), (result, env) => env.chain()),
     (x, env) => env.after(x))
-  t.deepEquals(withEnv('ab', 0, {
+  t.deepEquals(withEnv('ab', {
     chain: () => p.string('b'),
     after: (x) => x.toUpperCase()
   }), {

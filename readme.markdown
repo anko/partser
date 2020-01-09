@@ -52,9 +52,9 @@ var stringParser = p.map(
 
 // Now we can pass an environment object as part of the call to the parser,
 // telling it what that quoteParser should be.
-console.log(stringParser('"hi"', 0, { quoteParser: p.string('"') }))
-console.log(stringParser('$hi$', 0, { quoteParser: p.string('$') }))
-console.log(stringParser('ohio', 0, { quoteParser: p.string('o') }))
+console.log(stringParser('"hi"', { quoteParser: p.string('"') }))
+console.log(stringParser('$hi$', { quoteParser: p.string('$') }))
+console.log(stringParser('ohio', { quoteParser: p.string('o') }))
 ```
 
 Running it produces this:
@@ -83,15 +83,15 @@ Together these can be used to express how to turn text into a data structure.
 
 ### Calling a parser
 
-   parser(inputString, [offset, [environment]])
+   parser(inputString [, environment [, offset]])
 
 Every parser must be called with
 
  - an input string,
- - *optionally* an integer offset in characters where to start parsing (default
-   0, i.e. at the beginning), and
  - *optionally* an environment object that is passed to other parsers, and to
-   user-defined functions such as with the `map` parser.
+   user-defined functions such as with the `map` parser, and
+ - *optionally* an integer offset in characters where to start parsing (default
+   0, i.e. at the beginning).
 
 ### Result format
 
