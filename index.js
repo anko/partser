@@ -236,9 +236,8 @@ Partser.Parser = (function () {
   Partser.map = function (parser, fn) {
     assertFunction(fn)
 
-    const self = parser
     return Parser(function (stream, i, env) {
-      const result = self._(stream, i, env)
+      const result = parser._(stream, i, env)
       if (!result.status) return result
       return mergeReplies(makeSuccess(result.index, fn(result.value, env)), result)
     })
@@ -257,9 +256,8 @@ Partser.Parser = (function () {
   }
 
   Partser.desc = function (parser, expected) {
-    const self = parser
     return Parser(function (stream, i, env) {
-      const reply = self._(stream, i, env)
+      const reply = parser._(stream, i, env)
       if (!reply.status) reply.value = [expected]
       return reply
     })
@@ -399,9 +397,8 @@ Partser.Parser = (function () {
 
   Partser.chain = function (parser, f) {
     assertParser(parser)
-    const self = parser
     return Parser(function (stream, i, env) {
-      const result = self._(stream, i, env)
+      const result = parser._(stream, i, env)
       if (!result.status) return result
       const nextParser = f(result.value, env)
       return mergeReplies(nextParser._(stream, result.index, env), result)
