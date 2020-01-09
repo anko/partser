@@ -175,13 +175,13 @@ const seqMap = function () {
 }
 
 Partser.custom = function (parsingFunction) {
+  assertFunction(parsingFunction)
   return Parser(parsingFunction)
 }
 
 Partser.alt = function () {
   const parsers = [].slice.call(arguments)
-  const numParsers = parsers.length
-  if (numParsers === 0) return fail('zero alternates')
+  if (parsers.length === 0) return Partser.fail('zero alternates')
 
   parsers.forEach(assertParser)
 
@@ -247,6 +247,8 @@ Partser.map = function (parser, fn) {
 }
 
 Partser.mark = function (parser) {
+  assertParser(parser)
+
   return seqMap(
     Partser.index, parser, Partser.index,
     function (start, value, end) {
@@ -255,6 +257,8 @@ Partser.mark = function (parser) {
 }
 
 Partser.lcMark = function (parser) {
+  assertParser(parser)
+
   return seqMap(
     Partser.lcIndex, parser, Partser.lcIndex,
     function (start, value, end) {
@@ -263,6 +267,9 @@ Partser.lcMark = function (parser) {
 }
 
 Partser.desc = function (parser, expected) {
+  assertParser(parser)
+  assertString(expected)
+
   return Parser(function (stream, i, env) {
     const reply = parser._(stream, i, env)
     if (!reply.status) reply.value = [expected]
@@ -271,10 +278,10 @@ Partser.desc = function (parser, expected) {
 }
 
 Partser.string = function (str) {
+  assertString(str)
+
   const len = str.length
   const expected = "'" + str + "'"
-
-  assertString(str)
 
   return Parser(function (stream, i) {
     const head = stream.slice(i, i + len)
@@ -287,9 +294,9 @@ Partser.string = function (str) {
   })
 }
 
-Partser.regex = function (re, group) {
+Partser.regex = function (re, group = 0) {
   assertRegexp(re)
-  if (group) assertNumber(group)
+  assertNumber(group)
 
   const anchored = RegExp('^(?:' + re.source + ')', ('' + re).slice(('' + re).lastIndexOf('/') + 1))
   const expected = '' + re
@@ -314,7 +321,9 @@ Partser.succeed = function (value) {
   })
 }
 
-const fail = Partser.fail = function (expected) {
+Partser.fail = function (expected) {
+  assertString(expected)
+
   return Parser(function (stream, i) { return makeFailure(i, expected) })
 }
 
@@ -373,6 +382,7 @@ Partser.lcIndex = Parser(function (stream, i) {
 //
 
 Partser.clone = function (parser) {
+  assertParser(parser)
   return Partser.custom(parser._)
 }
 
@@ -384,6 +394,7 @@ Partser.replace = function (original, replacement) {
 
 Partser.chain = function (parser, f) {
   assertParser(parser)
+  assertFunction(f)
   return Parser(function (stream, i, env) {
     const result = parser._(stream, i, env)
     if (!result.status) return result

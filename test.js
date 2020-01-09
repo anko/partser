@@ -553,7 +553,7 @@ tape('clone', function (t) {
   // Cloning does not preserve object properties.
   a = p.string('a')
   a.hi = 'hello'
-  t.notOk(p.clone('a').hi)
+  t.throws(() => p.clone('a'))
 
   // Without cloning the `a` here, one of the branches of the p.alt would refer
   // to the p.alt itself (since that's what `a` is replaced with and cause an
