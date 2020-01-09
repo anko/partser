@@ -47,6 +47,15 @@ tape('any', (t) => {
 })
 tape('test', (t) => {
   parseOk(t, p.test((x) => x === 'a'), 'a', 'a')
+
+  const usesEnv = p.test((x, { whatCharacter }) => x === whatCharacter)
+  t.deepEquals(
+    usesEnv('x', { whatCharacter: 'x' }),
+    {
+      status: true,
+      value: 'x',
+      index: 1
+    }, 'also passes environment to test function')
 })
 tape('eof', (t) => {
   parseOk(t, p.eof, '', null)

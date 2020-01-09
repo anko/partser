@@ -138,10 +138,10 @@ but don't expect `clone` to copy them.
    the number argument was given, that [capturing
    group](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp#grouping-back-references)
    is returned.
- - `test`: Takes a function argument.  Consumes 1 character and passes it as an
-   argument to the function.  Succeeds and returns that character if the
-   function returns true.  Fails otherwise.  Nice for custom checks with
-   Unicode characters.
+ - `test`: Takes a function argument.  Consumes 1 character and passes it and
+   the environment as arguments to the function.  Succeeds and returns that
+   character if the function returns true.  Fails otherwise.  Nice for checking
+   Unicode character ranges for instance.
  - `custom`: Used to construct custom parser primitives with your own logic.
    Takes a function argument.  Your function should have the same interface as
    the built-in parsers: take 2 arguments (the input string, and integer offset

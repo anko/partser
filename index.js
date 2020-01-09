@@ -310,9 +310,9 @@ Partser.eof = Parser((stream, i) => {
 Partser.test = (predicate) => {
   assertFunction(predicate)
 
-  return Parser((stream, i) => {
+  return Parser((stream, i, env) => {
     const char = stream.charAt(i)
-    if (i < stream.length && predicate(char)) {
+    if (i < stream.length && predicate(char, env)) {
       return makeSuccess(i + 1, char)
     } else {
       return makeFailure(i, 'a character matching ' + predicate)
