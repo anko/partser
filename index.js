@@ -269,10 +269,6 @@ Partser.Parser = (function () {
     })
   }
 
-  //
-  // Primitives
-  //
-
   Partser.string = function (str) {
     const len = str.length
     const expected = "'" + str + "'"
