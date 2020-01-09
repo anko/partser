@@ -18,19 +18,30 @@ const skip = function (parser, next) {
 }
 
 Partser.Parser = (function () {
-  // Base parser constructor.
   //
-  // This just returns a callable parsing function with a `_` property that
-  // implements the parsing logic. That way, the `_` property can be changed
-  // without affecting the parser object's identity.
-  function Parser (action) {
+  // Base parser constructor
+  //
+  // The `_` property contains the actual implementation of the parser's
+  // behaviour.  It can be changed with the `replace` combinator, to change
+  // behaviour while keeping this parser's identity the same.
+  //
+  // Internally, we want the parser to succeed even if it didn't parse the full
+  // input string, so we can continue with the next parser.  This is what the
+  // base behaviour in `_` does.
+  //
+  // However, users would find this confusing; the expectation is for parsers
+  // to fail unless they can match the whole input string!  Therefore, the
+  // parser function itself actually parses for the base behaviour `_` followed
+  // by `eof` (end of input).  Internally, we never use this surface API.
+  //
+  function Parser (behaviour) {
     // This is the external interface to any parser.
     const instance = function (stream, index, env) {
       index = index || 0
 
       return skip(instance, Partser.eof)._(stream, index, env)
     }
-    instance._ = action
+    instance._ = behaviour
     return instance
   }
 
@@ -137,7 +148,6 @@ Partser.Parser = (function () {
     })
   }
 
-  // [Parser a] -> Parser [a]
   const seq = Partser.seq = function () {
     const parsers = [].slice.call(arguments)
     const numParsers = parsers.length
@@ -187,10 +197,6 @@ Partser.Parser = (function () {
       return result
     })
   }
-
-  //
-  // Combinators
-  //
 
   Partser.times = function (parser, min, max) {
     if (max === undefined) max = min
