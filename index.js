@@ -124,6 +124,7 @@ Partser.from = (lookup) => {
   assertFunction(lookup)
   return Parser((stream, i, env) => {
     const foundParser = lookup(env)
+    assertParser(foundParser)
     return foundParser._(stream, i, env)
   })
 }
