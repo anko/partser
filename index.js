@@ -1,13 +1,15 @@
 'use strict'
 const Partser = {}
 
+const toString = thing => Object.prototype.toString.call(thing)
+
 // For ensuring we have the right argument types
 const assert = (name, check) => {
   return (input) => {
-    if (!check(input)) throw new Error(`Not a ${name}: ${input.toString()}`)
+    if (!check(input)) throw new Error(`Not a ${name}: ${toString(input)}`)
   }
 }
-const assertParser = assert('parser', (x) => x._ && typeof x._ === 'function')
+const assertParser = assert('parser', (x) => x && typeof x._ === 'function')
 const assertNumber = assert('number', (x) => typeof x === 'number')
 const assertRegexp = assert('regex', (x) => x instanceof RegExp)
 const assertFunction = assert('function', (x) => typeof x === 'function')

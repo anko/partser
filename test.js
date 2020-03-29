@@ -114,6 +114,12 @@ tape('from: can be used to implement a recursive parser', (t) => {
   parseOk(t, list, '(x(x))', ['x', ['x']])
 })
 
+tape('p.from gives useful error if resolved value is not function', (t) => {
+  t.throws(() => {
+    p.from(() => { return null })('asd')
+  }, /Not a parser: \[object Null\]/)
+})
+
 tape('custom parsers can take whatever instead of strings', (t) => {
   // if you want them to!  You obviously can't expect this to work with the
   // built-in combinators though.
