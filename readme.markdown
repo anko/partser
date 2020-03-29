@@ -233,4 +233,4 @@ sed "1ivar p = require('.\\/index');" \
 
 ## License
 
-[MIT](#LICENSE).
+[ISC](#LICENSE).
