@@ -3,13 +3,15 @@ const Partser = {}
 
 const toString = thing => Object.prototype.toString.call(thing)
 
+const isParser = (x) => x && typeof x._ === 'function'
+
 // For ensuring we have the right argument types
 const assert = (name, check) => {
   return (input) => {
     if (!check(input)) throw new Error(`Not a ${name}: ${toString(input)}`)
   }
 }
-const assertParser = assert('parser', (x) => x && typeof x._ === 'function')
+const assertParser = assert('parser', isParser)
 const assertNumber = assert('number', (x) => typeof x === 'number')
 const assertRegexp = assert('regex', (x) => x instanceof RegExp)
 const assertFunction = assert('function', (x) => typeof x === 'function')
@@ -126,8 +128,13 @@ Partser.from = (lookup) => {
   assertFunction(lookup)
   return Parser((stream, i, env) => {
     const foundParser = lookup(env)
-    assertParser(foundParser)
-    return foundParser._(stream, i, env)
+    // Deliberately using isParser directly instead of calling assertParser, so
+    // we can throw a more descriptive error if the value is bad.
+    if (isParser(foundParser)) {
+      return foundParser._(stream, i, env)
+    } else {
+      throw Error(`Partser.from: Non-parser value ${toString(foundParser)} from ${lookup}`)
+    }
   })
 }
 
