@@ -7,8 +7,10 @@ const isParser = (x) => x && typeof x._ === 'function'
 
 // For ensuring we have the right argument types
 const assert = (name, check) => {
-  return (input) => {
-    if (!check(input)) throw new Error(`Not a ${name}: ${toString(input)}`)
+  return (fName, input) => {
+    if (!check(input)) {
+      throw new TypeError(`Partser.${fName}: Not a ${name}: ${toString(input)}`)
+    }
   }
 }
 const assertParser = assert('parser', isParser)
@@ -88,8 +90,8 @@ Partser.formatError = (stream, error) =>
   'expected ' + formatExpected(error.value) + formatGot(stream, error)
 
 Partser.except = (allowed, forbidden) => {
-  assertParser(allowed)
-  assertParser(forbidden)
+  assertParser('except', allowed)
+  assertParser('except', forbidden)
   return Parser((stream, i, env) => {
     const forbiddenResult = forbidden._(stream, i, env)
     if (forbiddenResult.status) {
@@ -117,7 +119,7 @@ Partser.except = (allowed, forbidden) => {
 // deriveEnv is a user-provided function that creates a new environment based
 // on the existing one.
 Partser.subEnv = (baseParser, deriveEnv) => {
-  assertFunction(deriveEnv)
+  assertFunction('subEnv', deriveEnv)
   return Parser((stream, i, env) => {
     const newEnv = deriveEnv(env)
     return baseParser._(stream, i, newEnv)
@@ -125,7 +127,7 @@ Partser.subEnv = (baseParser, deriveEnv) => {
 }
 
 Partser.from = (lookup) => {
-  assertFunction(lookup)
+  assertFunction('from', lookup)
   return Parser((stream, i, env) => {
     const foundParser = lookup(env)
     // Deliberately using isParser directly instead of calling assertParser, so
@@ -139,7 +141,7 @@ Partser.from = (lookup) => {
 }
 
 Partser.seq = (...parsers) => {
-  parsers.forEach(assertParser)
+  parsers.forEach((x) => assertParser('seq', x))
   return Parser((stream, i, env) => {
     let result
     const accum = new Array(parsers.length)
@@ -163,13 +165,13 @@ const seqMap = (...args) => {
 }
 
 Partser.custom = (parsingFunction) => {
-  assertFunction(parsingFunction)
+  assertFunction('custom', parsingFunction)
   return Parser(parsingFunction)
 }
 
 Partser.alt = (...parsers) => {
   if (parsers.length === 0) return Partser.fail('zero alternates')
-  parsers.forEach(assertParser)
+  parsers.forEach((x) => assertParser('alt', x))
 
   return Parser((stream, i, env) => {
     let result
@@ -184,9 +186,9 @@ Partser.alt = (...parsers) => {
 Partser.times = (parser, min, max) => {
   if (max === undefined) max = min
 
-  assertParser(parser)
-  assertNumber(min)
-  assertNumber(max)
+  assertParser('times', parser)
+  assertNumber('times', min)
+  assertNumber('times', max)
 
   return Parser((stream, i, env) => {
     const successes = []
@@ -223,7 +225,7 @@ Partser.times = (parser, min, max) => {
 }
 
 Partser.map = (parser, fn) => {
-  assertFunction(fn)
+  assertFunction('map', fn)
 
   return Parser((stream, i, env) => {
     const result = parser._(stream, i, env)
@@ -233,7 +235,7 @@ Partser.map = (parser, fn) => {
 }
 
 Partser.mark = (parser) => {
-  assertParser(parser)
+  assertParser('mark', parser)
 
   return seqMap(
     Partser.index, parser, Partser.index,
@@ -241,7 +243,7 @@ Partser.mark = (parser) => {
 }
 
 Partser.lcMark = (parser) => {
-  assertParser(parser)
+  assertParser('lcMark', parser)
 
   return seqMap(
     Partser.lcIndex, parser, Partser.lcIndex,
@@ -249,8 +251,8 @@ Partser.lcMark = (parser) => {
 }
 
 Partser.desc = (parser, expected) => {
-  assertParser(parser)
-  assertString(expected)
+  assertParser('desc', parser)
+  assertString('desc', expected)
 
   return Parser((stream, i, env) => {
     const reply = parser._(stream, i, env)
@@ -260,7 +262,7 @@ Partser.desc = (parser, expected) => {
 }
 
 Partser.string = (str) => {
-  assertString(str)
+  assertString('string', str)
 
   const len = str.length
   const expected = `'${str}'`
@@ -274,8 +276,8 @@ Partser.string = (str) => {
 }
 
 Partser.regex = (re, group = 0) => {
-  assertRegexp(re)
-  assertNumber(group)
+  assertRegexp('regex', re)
+  assertNumber('regex', group)
 
   const anchored = RegExp(
     `^(?:${re.source})`,
@@ -299,7 +301,7 @@ Partser.succeed = (value) =>
   Parser((stream, i) => makeSuccess(i, value))
 
 Partser.fail = (expected) => {
-  assertString(expected)
+  assertString('fail', expected)
   return Parser((stream, i) => makeFailure(i, expected))
 }
 
@@ -317,7 +319,7 @@ Partser.eof = Parser((stream, i) => {
 })
 
 Partser.test = (predicate) => {
-  assertFunction(predicate)
+  assertFunction('test', predicate)
 
   return Parser((stream, i, env) => {
     const char = stream.charAt(i)
@@ -353,19 +355,19 @@ Partser.lcIndex = Parser((stream, i) => {
 //
 
 Partser.clone = (parser) => {
-  assertParser(parser)
+  assertParser('clone', parser)
   return Partser.custom(parser._)
 }
 
 Partser.replace = (original, replacement) => {
-  assertParser(original)
-  assertParser(replacement)
+  assertParser('replace', original)
+  assertParser('replace', replacement)
   original._ = replacement._
 }
 
 Partser.chain = (parser, f) => {
-  assertParser(parser)
-  assertFunction(f)
+  assertParser('chain', parser)
+  assertFunction('chain', f)
   return Parser((stream, i, env) => {
     const result = parser._(stream, i, env)
     if (!result.status) return result
