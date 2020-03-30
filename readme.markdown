@@ -191,6 +191,10 @@ but don't expect `clone` to copy them.
    object as an argument whenever the parser is needed, and the function is
    expected to return a parser, which is then called.
 
+### `isParser`
+
+Checks if the argument is a real Partser parser.
+
 ### `replace`
 
 Switches a parser's logic for that of another one, without affecting either's

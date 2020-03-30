@@ -3,7 +3,9 @@ const Partser = {}
 
 const toString = thing => Object.prototype.toString.call(thing)
 
-const isParser = (x) => x && typeof x._ === 'function'
+const isParser = (p) => {
+  return (typeof p === 'function') && p[parserSymbol] === true
+}
 
 // For ensuring we have the right argument types
 const assert = (name, check) => {
@@ -23,6 +25,17 @@ const skip = (parser, next) => {
   return Partser.map(Partser.seq(parser, next), ([x, _]) => x)
 }
 
+// A symbol that's added as a non-{enumerable,writable,configurable} property
+// on every Parser instance, so we can distinguish them as clearly as possible
+// from ordinary Functions.
+//
+// Ideally, we'd instead be making Parser a class so instanceof would work, but
+// you can't do that while also having the instances of the class be callable,
+// which I *really* want as an API.  It might be possible to do by extending
+// the Function built-in, but that stuff is dark sorcery that I'd rather not
+// have to think about.
+const parserSymbol = Symbol('Partser parser identifying mark')
+
 // Base parser constructor
 const Parser = Partser.Parser = (behaviour) => {
   //
@@ -39,11 +52,19 @@ const Parser = Partser.Parser = (behaviour) => {
   // parser function itself actually parses for the base behaviour `_` followed
   // by `eof` (end of input).  Internally, we never use this surface API.
   //
-  const instance = (stream, env, index = 0) =>
-    skip(instance, Partser.eof)._(stream, index, env)
-  instance._ = behaviour
-  return instance
+  const parser = (stream, env, index = 0) =>
+    skip(parser, Partser.eof)._(stream, index, env)
+  parser._ = behaviour
+  Object.defineProperty(parser, parserSymbol, {
+    value: true,
+    writable: false,
+    enumerable: false,
+    configurable: false
+  })
+  return parser
 }
+
+Partser.isParser = isParser
 
 const makeSuccess = (index, value) =>
   ({ status: true, index, value })

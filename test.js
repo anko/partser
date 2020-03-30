@@ -31,6 +31,13 @@ const parseFail = (t, parser, input, index, expected) => {
 // Basics
 //
 
+tape('isParser', (t) => {
+  t.ok(p.isParser(p.string('a')))
+})
+tape('Object.keys is unpolluted', (t) => {
+  t.deepEquals(Object.keys(p.string('a')), ['_'])
+})
+
 tape('string', (t) => {
   parseOk(t, p.string('a'), 'a', 'a')
 })
