@@ -1,19 +1,16 @@
 # partser [![](https://img.shields.io/npm/v/partser.svg?style=flat-square)](https://www.npmjs.com/package/partser) [![](https://img.shields.io/travis/anko/partser.svg?style=flat-square)](https://travis-ci.org/anko/partser) [![](https://img.shields.io/david/anko/partser.svg?style=flat-square)](https://david-dm.org/anko/partser)
 
-Partser is a combinatory parsing library for JavaScript with a focus on being
-*ridiculously* flexible and modular.  Among other things, it—
+Partser is a combinatory parsing library for JS, for writing LL(∞) parsers made
+of other parsers.  It is *ridiculously flexible*: Your parsers can modify their
+parsing logic even during parsing, by introducing, redefining, or modifying
+sub-parsers inside nested scoped environments, even based on partial parse
+results.
 
- - can modify its own parsing logic *in the middle of parsing*,
- - passes an environment object to parsers,
- - can create nested sub-environments during parsing, and
- - lets you easily implement your own custom primitive parsers or combinators.
+If you'd prefer a more abstract API and don't need advanced features like
+environments, try [Parsimmon](https://github.com/jneen/parsimmon), which this
+project was forked from.
 
-If you are looking for a combinatory parsing library that is similar but
-friendlier and without these advanced features, try
-[Parsimmon](https://github.com/jneen/parsimmon), which this project was
-originally forked from.
-
-## Example
+## Motivating example
 
 Here's a demonstration of a string literal parser that reads the quote symbol
 that it should use from the environment object passed by the caller:
@@ -27,7 +24,7 @@ sed "s/require('partser')/require('.\\/index.js')/g" \
 <!-- !test in quick example -->
 
 ``` js
-var p = require('./index.js')
+var p = require('partser')
 
 // Let's parse a string!
 
@@ -57,7 +54,7 @@ console.log(stringParser('$hi$', { quoteParser: p.string('$') }))
 console.log(stringParser('ohio', { quoteParser: p.string('o') }))
 ```
 
-Running it produces this:
+Output:
 
 <!-- !test out quick example -->
 
@@ -83,158 +80,230 @@ Together these can be used to express how to turn text into a data structure.
 
 ### Calling a parser
 
-   parser(inputString [, environment [, offset]])
+    parser(input [, environment [, offset]])
 
-Every parser must be called with
+ - `input` (`String`): the string to parse from
+ - `environment` (`(any type)`; *optional*): environment object passed to other
+   parsers, and to user-defined functions such as in the `map` parser (default:
+   `undefined`)
+ - `offset` (`Number`; *optional*): integer character offset for where in
+   `input` to start parsing (default: 0)
 
- - an input string,
- - *optionally* an environment object that is passed to other parsers, and to
-   user-defined functions such as with the `map` parser, and
- - *optionally* an integer offset in characters where to start parsing (default
-   0, i.e. at the beginning).
+Returns:
 
-### Result format
+—on success:
 
-When called, a parser returns an object with these fields:
+ - `status` (`Boolean`): `true`
+ - `value`: the return value of the parse
+ - `index` (`Number`): how many characters were consumed
 
- - `status`: a Boolean representing whether the parse succeeded (`true`) or
-   failed (`false`).
- - `value`:
-   - **If successful**, the return value of the parse.
-   - **If failed**, an array of strings representing what input would have been
-     acceptable at the point in the input that the parse failed.
- - `index`:
-   - **If successful**, the point in the stream that the parse succeeded at.
-     (Probably only useful for advanced users writing custom parser primitives
-     that maybe called by other parsers.)
-   - **If failed**, the furthest that the parser managed to match before
-     encountering a dead end.
+ —on failure:
+
+ - `status` (`Boolean`): `false`
+ - `value` (`Array`): human-readable strings representing what input would have
+   been acceptable instead
+ - `index` (`Number`): the offset at which the parse encountered a dead end
 
 ### Primitive parsers
 
- - `all`: Matches all input and returns it.  Always succeeds.
- - `any`: Matches any 1 character and returns it.
- - `eof`: Matches the end of input and returns null.
- - `succeed`: Always succeeds without consuming any input, and returns null.
- - `fail`: Always fails.
- - `index`: Consumes no input.  Returns a 0-based integer representing the
-   number of characters that have been consumed from the input so far.  Always
-   succeeds.
- - `lcIndex`: Consumes no input.  Returns an object with integer fields `line`
-   (1-based), `column` (1-based) and character `offset` (0-based), which
-   represents how much input has been consumed so far.  Always succeeds.
+These parsers are already pre-defined for you:
 
-A parser is a function that can be called with a string to return a `{
-status::Boolean, value::Any }`-object.  Don't touch their `_`-property, or
-assume anything about what it is or does.  Feel free to assign other properties,
-but don't expect `clone` to copy them.
+#### `p.all`
+
+Always succeeds, consuming all input and returning it.
+
+#### `p.any`
+
+Matches any 1 character and returns it.
+
+#### `p.eof`
+
+Matches the end of input (only matches if no more characters are remaining) and
+returns null.
+
+#### `p.index`
+
+Always succeeds, without consuming any input.  Returns a 0-based integer
+representing the offset into the input that has been consumed so far.
+
+#### `p.lcIndex`
+
+Always succeeds, without consuming any input.  Returns an object with integer
+fields `line` (1-based), `column` (1-based) and character `offset` (0-based),
+which represents how much input has been consumed so far.
+
+This is a more verbose version of [`p.index`](#pindex).  For performance, use
+that if you only need the character offset.
 
 ### Parser constructors
 
- - `string`: Takes a string argument.  The returned parser matches and returns
-   that string.
- - `regex`: Takes a RegExp argument and an optional number argument.  The
-   returned parser matches anything that matches that regex and returns it.  If
-   the number argument was given, that [capturing
-   group](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp#grouping-back-references)
-   is returned.
- - `test`: Takes a function argument.  Consumes 1 character and passes it and
-   the environment as arguments to the function.  Succeeds and returns that
-   character if the function returns true.  Fails otherwise.  Nice for checking
-   Unicode character ranges for instance.
- - `custom`: Used to construct custom parser primitives with your own logic.
-   Takes a function argument.  Your function should have the same interface as
-   the built-in parsers: take 2 arguments (the input string, and integer offset
-   into it that has been consumed so far) and return objects adhering to the
-   [result format](#result-format)
+These functions let you construct your own parsers that match various things:
+
+#### `p.succeed([value])`
+
+Return:  Parser that always succeeds with `value` or undefined, without
+consuming any input.
+
+#### `p.fail([value])`
+
+Return:  Parser that always fails with `value` or undefined, without consuming
+any input.
+
+#### `p.string(value:String)`
+
+Return:  Parser that matches that string and returns it.
+
+#### `p.regex(regex:RegExp [, group:Number])`
+
+Return:  Parser that matches the given `regex` and returns the given capturing `group` (default: 0).
+
+#### `p.test(predicate:Function)`
+
+Return:  Parser that consumes 1 `character`, calls `predicate(character, env)`.
+Succeeds and returns `character` if `predicate` returns true.  Otherwise fails.
+
+Nice for when you need to do math on character values, like checking Unicode
+character ranges.
+
+#### `p.custom(implementation:Function)`
+
+Return:  Parser that works according to the logic specified in the given
+`implementation`.  The `implementation` should have the [the same API as the
+built-in parsers do](#calling-a-parser).
 
 ### Parser combinators
 
- - `seq`: Takes any number of parser arguments.  Returns a parser that matches
-   those parsers in sequence and returns an arrey of their results.
- - `alt`: Takes any number of parser arguments.  Returns a parser that matches
-   any one of those parsers.  It returns the result of the first that matches.
- - `times`: Takes a parser, a minimum number, and an optional maximum number.
-   If 1 number is given, returns a parser that matches the parser exactly that
-   many times.  If both numbers are given, the returned parser will match the
-   given at least the minimum number of times, and at most the maximum number.
- - `except`: Takes an "allowed" parser and a "forbidden" parser.  Returns a
-   parser that matches anything that the allowed parser accepts *and* which the
-   forbidden parser does *not* accept.
- - `desc`: Takes a parser and a string.  Returns a parser that works the same
-   as the given parser, but always fails with the given string as its
-   "expected" value.
- - `mark`: Takes a parser.  Returns a parser that works the same as the given
-   parser, but instead returns an object of the form `{ value :
-   whateverItReturned, start: Number, end: Number }` where `start` and `end`
-   denote where in the input the match appeared.
- - `lcMark`: Takes a parser.  Returns a parser that works the same as the given
-   parser, but instead returns an object, which `value` is what that parser
-   returned, and `start` and `end` are objects with `offset`, `line` and
-   `column` properties, just like `lcIndex` returns, which denote where in the
-   input the match appeared.
- - `map`: Takes a parser and a function.  Returns a parser that matches the
-   same as the input parser, but every time it matches, the value and
-   environment object are passed to the given function, and its return value is
-   used instead.
- - `chain`: Takes a parser and a function.  Returns a parser that matches the
-   given parser, then calls the given function with its result and the
-   environment object.  That function is expected to return a parser to call
-   next, and the match result of that is returned.
- - `clone`: Takes a parser.  Returns a parser with identical logic to the given
-   parser, but a distinct object identity.  Does not copy any properties
-   assigned to the parser!
- - `subEnv`: Takes a parser, and a function that takes an environment and
-   returns a derived environment.  Within the given parser, that derived
-   environment is used instead of the original one.
- - `from`: Takes a function.  The function is called with the environment
-   object as an argument whenever the parser is needed, and the function is
-   expected to return a parser, which is then called.
+These functions operate on parsers, acting as "wrappers" around them to modify
+how they work.
 
-### `isParser`
+#### `p.seq([parser, ...])
 
-Checks if the argument is a real Partser parser.
+Takes any number of arguments.
 
-### `replace`
+Return:  Parser that matches all of the given `parser`s in order, and returns
+an Array of their results.
 
-Switches a parser's logic for that of another one, without affecting either's
-identity.  Returns `undefined`.  You rarely need to use this, but it's here if
-you need it for some reason.
+#### `p.alt([parser, ...])`
 
-### `formatError`
+Takes any number of arguments.
 
-Takes a string that you parsed and the result object of a failed parse of that
-string.  Produces a human-readable error string stating what went wrong, where
+Returns a parser that matches any of the given `parser`s, and returns the result of the first one that matches.
+
+#### `p.times(parser, min:Number [, max:Number])`
+
+Returns a parser that matches the given `parser` at least `min`, and at most
+`max` times, and returns an Array of the results.
+
+If `max` is not given, `max = min`.
+
+#### `p.except(allowedParser, forbiddenParser)`
+
+Returns a parser that matches what `allowedParser` matches, except if what it
+matched would also match `forbiddenParser`.
+
+#### `p.desc(parser, description:String)`
+
+Returns a parser that works exactly the same as `parser`, but always fails with
+the `description` as its expected value.
+
+Useful for making complex parsers show clearer error messages.
+
+#### `p.mark(parser)`
+
+Returns a parser that works exactly like `parser`, but when it succeeds, it
+annotates the return `value` with the `start` and `end` offsets of where that
+value was found.  The `value` becomes an Object with `{ value, start, end }`
+instead.
+
+Useful when you need to know not only that something matched, but *where* it
+was matched, such as for generating a [source
+map](https://github.com/mozilla/source-map).
+
+#### `p.lcMark(parser)`
+
+Like [`p.mark`](#pmarkparser), but also annotates the value with 1-based `line` and
+`column` locations.  You can expect the value to look like—
+
+    { value,
+      start: { offset, line, column },
+      end:   { offset, line, column } }
+
+#### `p.map(parser, transformer:Function)`
+
+Returns a parser that works exactly like `parser`, but when it succeeds with a
+`value`, it instead returns `transformer(value, env)`.
+
+Analogous to
+[`Array.prototype.map`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map).
+
+#### `p.chain(parser, decider:Function)`
+
+Returns a parser that matches the given `parser` to get a `value`, then calls
+`decider(value, env)` expecting it to return a parser.  Then matches and
+returns *that parser* returned by `decider`.
+
+:warning: *You almost certainly want [`p.from`](#pfromdecideparserfunction) instead.*  This is a classic
+combinator possibly familiar to users of other parsing libraries.  I've
+implemented it here mainly to reduce the cognitive load of porting parsers
+between libraries.
+
+#### `p.clone(parser)`
+
+Returns a parser that works exactly like the given `parser`, but has a distinct
+object identity.
+
+Useful if you're intending to [`p.replace`](#preplacetargetparsersourceparser) the original and want a
+copy that doesn't change to point to its new `p.replace`d implementation.
+
+#### `p.subEnv(parser, derive:Function)`
+
+Returns a parser that works exactly like the given `parser`, but with a
+different environment object passed to its parsers.  The new environment object
+is created by calling `derive(env)` where `env` is the current environment.
+
+#### `p.from(decideParser:Function)`
+
+Delegates to the parser returned by `decideParser(environment)`.
+
+This lets you decide dynamically in the middle of parsing what you want this
+parser to be, based on the `environment` or otherwise.
+
+### Helpers
+
+#### `p.replace(targetParser, sourceParser)`
+
+Switches the `targetParser`'s parsing logic for the parsing logic of
+`sourceParser`, without affecting either's object identity.
+
+Returns `undefined`.
+
+:warning:  *This is a hack that you almost certainly shouldn't use.*  I keep it
+around because it's useful for debugging and unsafe duct-tape creativity.  If
+you need to change parsers, you should probably implement them as
+[`p.from`](#pfromdecideparserfunction)s instead, and dynamically load the
+desired implementation from your environment object.  That way you can use
+[`p.subEnv`](#psubenvparserderivefunction)s too, to keep your parsing
+environments scoped and clean.  But the dirty large hammer is here if you need
+it for some reason.
+
+#### `p.isParser(value)`
+
+Returns `true` if `value` is a Partser parser, and `false` otherwise.
+
+#### `p.formatError(input:String, result:Object)`
+
+Takes an `input` that you parsed, and the `result` of a failed parse of that
+input.  Produces a human-readable error string stating what went wrong, where
 it went wrong, and what was expected instead.
 
-<!-- !test program
-# Insert import line to input, and delete final newline from output.
-sed "1ivar p = require('.\\/index');" \
-| node \
-| head -c -1 -->
-
-<!-- !test in formatError -->
-
-    var parser = p.seq(p.string('Axe '), p.alt(p.string('fells you!'), p.string('sharpens!')))
-
-    var input = 'Axe dies!'
-    var result = parser(input)
-    console.log(p.formatError(input, result))
-
-<!-- !test out formatError -->
-
-    expected one of 'sharpens!', 'fells you!' at character 4, got '...dies!'
+Nice for generating human-readable error messages, if you don't want to do it
+yourself.
 
 ## Tips and patterns
 
- - Getting infinite loops and overflowing the stack when replacing a parser
-   with something that calls that parser?  You probably want to pass a `clone`
-   of it instead.
- - You might want to structure your parser to load some notable parts of its
-   parsing logic from the environment object using `from`.  That way, if your
-   users wish they could parse some part differently, they can pass in the
-   functionality they wished they had instead.
+ - Trying to pass a parser that isn't yet defined to a combinator?  Use
+   [`p.from`](#pfromdecideparserfunction) to load it during parsing instead.
 
 ## License
 
-[ISC](#LICENSE).
+[ISC](LICENSE)
