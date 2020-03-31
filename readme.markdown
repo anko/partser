@@ -74,7 +74,8 @@ Partser gives you functions of a few different types:
    on arguments (e.g.  `string` or `regex`),
  - [*parser combinators*](#parser-combinators) that take parsers and produce
    new parsers that use them (e.g.  `seq`, `alt`, or `map`),
- - [`replace`](#replace), which allows a parser's logic to be changed, and
+ - [*helper functions*](#helper-functions), for debugging, error-formatting,
+   and other miscellaneous related tasks.
 
 Together these can be used to express how to turn text into a data structure.
 
@@ -268,7 +269,7 @@ Delegates to the parser returned by `decideParser(environment)`.
 This lets you decide dynamically in the middle of parsing what you want this
 parser to be, based on the `environment` or otherwise.
 
-### Helpers
+### Helper functions
 
 #### `p.replace(targetParser, sourceParser)`
 
