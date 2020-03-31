@@ -213,6 +213,15 @@ tape('seq', (t) => {
   }, 'passes env')
 })
 
+tape('seq with multiple empty parsers', (t) => {
+  const parser = p.seq(p.succeed('a'), p.succeed('b'))
+  t.deepEquals(parser(''), {
+    status: true,
+    value: ['a', 'b'],
+    index: 0
+  })
+})
+
 tape('subEnv can be modification of existing env', (t) => {
   const needsEnv = p.map(p.string('a'), (x, env) => env)
   const withEnv = p.subEnv(needsEnv, x => x + 'world')
