@@ -53,14 +53,14 @@ Output:
 
 <!-- !test out motivating example -->
 
-```
-{ status: true, index: 4, value: 'hi' }
-{ status: true, index: 4, value: 'hi' }
-{ status: true, index: 4, value: 'hi' }
-```
+> ```
+> { status: true, index: 4, value: 'hi' }
+> { status: true, index: 4, value: 'hi' }
+> { status: true, index: 4, value: 'hi' }
+> ```
 
 For sub-environments, see the [`p.subEnv` example
-below](#psubenvparserderivefunction).
+below](#psubenvparser-derivefunction).
 
 ## Usage
 
@@ -118,7 +118,9 @@ Always succeeds, consuming all input and returning it.
 
 <!-- !test out all -->
 
-    { status: true, index: 13, value: 'ashldflasdhfl' }
+> ```
+> { status: true, index: 13, value: 'ashldflasdhfl' }
+> ```
 
 #### `p.any`
 
@@ -132,8 +134,10 @@ Matches any 1 character and returns it.
 
 <!-- !test out any -->
 
-    { status: true, index: 1, value: 'a' }
-    { status: true, index: 1, value: 'b' }
+> ```
+> { status: true, index: 1, value: 'a' }
+> { status: true, index: 1, value: 'b' }
+> ```
 
 #### `p.eof`
 
@@ -147,7 +151,9 @@ returns null.
 
 <!-- !test out eof -->
 
-    { status: true, index: 0, value: null }
+> ```
+> { status: true, index: 0, value: null }
+> ```
 
 #### `p.index`
 
@@ -163,7 +169,9 @@ representing the offset into the input that has been consumed so far.
 
 <!-- !test out index -->
 
-    { status: true, index: 2, value: [ 'hi', 2 ] }
+> ```
+> { status: true, index: 2, value: [ 'hi', 2 ] }
+> ```
 
 #### `p.lcIndex`
 
@@ -183,11 +191,13 @@ that if you only need the character offset.
 
 <!-- !test out lcIndex -->
 
-    {
-      status: true,
-      index: 2,
-      value: [ 'hi', { offset: 2, line: 1, column: 3 } ]
-    }
+> ```
+> {
+>   status: true,
+>   index: 2,
+>   value: [ 'hi', { offset: 2, line: 1, column: 3 } ]
+> }
+> ```
 
 ### Parser constructors
 
@@ -205,7 +215,9 @@ consuming any input.
 
 <!-- !test out succeed -->
 
-    { status: true, index: 0, value: 'success!' }
+> ```
+> { status: true, index: 0, value: 'success!' }
+> ```
 
 #### `p.fail([value])`
 
@@ -219,7 +231,9 @@ any input.
 
 <!-- !test out fail -->
 
-    { status: false, index: 0, value: [ 'failure!' ] }
+> ```
+> { status: false, index: 0, value: [ 'failure!' ] }
+> ```
 
 #### `p.string(value:String)`
 
@@ -232,7 +246,9 @@ Return:  Parser that matches that string and returns it.
 
 <!-- !test out string -->
 
-    { status: true, index: 6, value: 'Hello!' }
+> ```
+> { status: true, index: 6, value: 'Hello!' }
+> ```
 
 #### `p.regex(regex:RegExp [, group:Number])`
 
@@ -245,7 +261,9 @@ Return:  Parser that matches the given `regex` and returns the given capturing `
 
 <!-- !test out regex -->
 
-    { status: true, index: 4, value: 'okay' }
+> ```
+> { status: true, index: 4, value: 'okay' }
+> ```
 
 #### `p.test(predicate:Function)`
 
@@ -263,12 +281,14 @@ character ranges.
 
 <!-- !test out text -->
 
-    { status: true, index: 1, value: '0' }
-    {
-      status: false,
-      index: 0,
-      value: [ 'a character matching (x) => x.charCodeAt(0) < 100' ]
-    }
+> ```
+> { status: true, index: 1, value: '0' }
+> {
+>   status: false,
+>   index: 0,
+>   value: [ 'a character matching (x) => x.charCodeAt(0) < 100' ]
+> }
+> ```
 
 #### `p.custom(implementation:Function)`
 
@@ -286,7 +306,9 @@ built-in parsers do](#calling-a-parser).
 
 <!-- !test out custom -->
 
-    { status: true, index: 0, value: 42 }
+> ```
+> { status: true, index: 0, value: 42 }
+> ```
 
 ### Parser combinators
 
@@ -310,7 +332,9 @@ an Array of their results.
 
 <!-- !test out seq -->
 
-    { status: true, index: 2, value: [ 'a', 'x' ] }
+> ```
+> { status: true, index: 2, value: [ 'a', 'x' ] }
+> ```
 
 #### `p.alt([parser, ...])`
 
@@ -329,7 +353,9 @@ result of the first one that matches.
 
 <!-- !test out alt -->
 
-    { status: true, index: 1, value: 'b' }
+> ```
+> { status: true, index: 1, value: 'b' }
+> ```
 
 #### `p.times(parser, min:Number [, max:Number])`
 
@@ -348,9 +374,11 @@ If `max` is not given, `max = min`.
 
 <!-- !test out times -->
 
-    { status: false, index: 1, value: [ "'A'" ] }
-    { status: true, index: 2, value: [ 'A', 'A' ] }
-    { status: true, index: 5, value: [ 'A', 'A', 'A', 'A', 'A' ] }
+> ```
+> { status: false, index: 1, value: [ "'A'" ] }
+> { status: true, index: 2, value: [ 'A', 'A' ] }
+> { status: true, index: 5, value: [ 'A', 'A', 'A', 'A', 'A' ] }
+> ```
 
 #### `p.except(allowedParser, forbiddenParser)`
 
@@ -367,9 +395,11 @@ matched would also match `forbiddenParser`.
 
 <!-- !test out except -->
 
-    { status: true, index: 1, value: 'a' }
-    { status: false, index: 0, value: [ "something that is not 'b'" ] }
-    { status: true, index: 1, value: 'c' }
+> ```
+> { status: true, index: 1, value: 'a' }
+> { status: false, index: 0, value: [ "something that is not 'b'" ] }
+> { status: true, index: 1, value: 'c' }
+> ```
 
 #### `p.desc(parser, description:String)`
 
@@ -392,8 +422,10 @@ Useful for making complex parsers show clearer error messages.
 
 <!-- !test out desc -->
 
-    { status: true, index: 3, value: { left: 3, right: 2 } }
-    { status: false, index: 1, value: [ 'a float constant' ] }
+> ```
+> { status: true, index: 3, value: { left: 3, right: 2 } }
+> { status: false, index: 1, value: [ 'a float constant' ] }
+> ```
 
 #### `p.mark(parser)`
 
@@ -414,7 +446,9 @@ map](https://github.com/mozilla/source-map).
 
 <!-- !test out mark -->
 
-    { status: true, index: 3, value: { start: 0, value: 'abc', end: 3 } }
+> ```
+> { status: true, index: 3, value: { start: 0, value: 'abc', end: 3 } }
+> ```
 
 #### `p.lcMark(parser)`
 
@@ -429,15 +463,17 @@ Like [`p.mark`](#pmarkparser), but also annotates the value with 1-based `line` 
 
 <!-- !test out lcMark -->
 
-    {
-      status: true,
-      index: 3,
-      value: {
-        start: { offset: 0, line: 1, column: 1 },
-        value: 'abc',
-        end: { offset: 3, line: 1, column: 4 }
-      }
-    }
+> ```
+> {
+>   status: true,
+>   index: 3,
+>   value: {
+>     start: { offset: 0, line: 1, column: 1 },
+>     value: 'abc',
+>     end: { offset: 3, line: 1, column: 4 }
+>   }
+> }
+> ```
 
 #### `p.map(parser, transformer:Function)`
 
@@ -455,7 +491,9 @@ Analogous to
 
 <!-- !test out map -->
 
-    { status: true, index: 2, value: 42 }
+> ```
+> { status: true, index: 2, value: 42 }
+> ```
 
 #### `p.chain(parser, decider:Function)`
 
@@ -481,9 +519,11 @@ between libraries.
 
 <!-- !test out chain -->
 
-    { status: true, index: 3, value: 'bc' }
-    { status: true, index: 3, value: 'yz' }
-    { status: false, index: 1, value: [ "'bc'" ] }
+> ```
+> { status: true, index: 3, value: 'bc' }
+> { status: true, index: 3, value: 'yz' }
+> { status: false, index: 1, value: [ "'bc'" ] }
+> ```
 
 #### `p.subEnv(parser, derive:Function)`
 
@@ -512,9 +552,11 @@ is created by calling `derive(env)` where `env` is the current environment.
 
 <!-- !test out subEnv -->
 
-    { status: true, index: 1, value: { level: 0 } }
-    { status: true, index: 3, value: [ { level: 1 } ] }
-    { status: true, index: 6, value: [ [ { level: 2 } ], { level: 1 } ] }
+> ```
+> { status: true, index: 1, value: { level: 0 } }
+> { status: true, index: 3, value: [ { level: 1 } ] }
+> { status: true, index: 6, value: [ [ { level: 2 } ], { level: 1 } ] }
+> ```
 
 #### `p.from(decideParser:Function)`
 
@@ -532,8 +574,10 @@ parser to be, based on the `environment`, or otherwise.
 
 <!-- !test out from -->
 
-    { status: true, index: 3, value: 'abc' }
-    { status: true, index: 14, value: 'something else' }
+> ```
+> { status: true, index: 3, value: 'abc' }
+> { status: true, index: 14, value: 'something else' }
+> ```
 
 #### `p.clone(parser)`
 
@@ -541,14 +585,14 @@ Returns a parser that works exactly like the given `parser`, but has a distinct
 object identity.
 
 It may be useful if you're intending to
-[`p.replace`](#preplacetargetparsersourceparser) the original and want a copy
+[`p.replace`](#preplacetargetparser-sourceparser) the original and want a copy
 that doesn't change to point to its new `p.replace`d implementation.
 
 :warning: This is a hack that may be useful for debugging, but which you
 probably shouldn't use in actual code.  It is almost certainly better
 architecture to simply create a function that can construct copies of the
 identical parser you need, or just pass the same parser to multiple places.
-See the warning on [`p.replace`](#preplacetargetparsersourceparser) for more
+See the warning on [`p.replace`](#preplacetargetparser-sourceparser) for more
 about this.
 
 <!-- !test in clone -->
@@ -563,9 +607,11 @@ about this.
 
 <!-- !test out clone -->
 
-    { status: true, index: 1, value: 'b' }
-    { status: true, index: 1, value: 'a' }
-    { status: false, index: 0, value: [ "'a'" ] }
+> ```
+> { status: true, index: 1, value: 'b' }
+> { status: true, index: 1, value: 'a' }
+> { status: false, index: 0, value: [ "'a'" ] }
+> ```
 
 ### Helper functions
 
@@ -581,7 +627,7 @@ around because it's useful for debugging and unsafe duct-tape creativity.  If
 you need to change parsers, you should probably implement them as
 [`p.from`](#pfromdecideparserfunction)s instead, and dynamically load the
 desired implementation from your environment object.  That way you can use
-[`p.subEnv`](#psubenvparserderivefunction)s too, to keep your parsing
+[`p.subEnv`](#psubenvparser-derivefunction)s too, to keep your parsing
 environments scoped and clean.  But the dirty large hammer is here if you need
 it for some reason.
 
@@ -594,7 +640,9 @@ it for some reason.
 
 <!-- !test out replace -->
 
-    { status: true, index: 1, value: 'b' }
+> ```
+> { status: true, index: 1, value: 'b' }
+> ```
 
 #### `p.isParser(value)`
 
@@ -610,8 +658,10 @@ Returns `true` if `value` is a Partser parser, and `false` otherwise.
 
 <!-- !test out isParser -->
 
-    true
-    false
+> ```
+> true
+> false
+> ```
 
 #### `p.formatError(input:String, result:Object)`
 
@@ -633,7 +683,9 @@ yourself.
 
 <!-- !test out formatError -->
 
-    expected one of 'b', 'a' at character 0, got 'c'
+> ```
+> expected one of 'b', 'a' at character 0, got 'c'
+> ```
 
 ## Tips and patterns
 
