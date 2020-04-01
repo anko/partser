@@ -689,8 +689,29 @@ yourself.
 
 ## Tips and patterns
 
- - Trying to pass a parser that isn't yet defined to a combinator?  Use
+ - Trying to make a recursive parser, or want to pass a not-yet-defined parser
+   to a combinator, and getting a `ReferenceError`?  You can use
    [`p.from`](#pfromdecideparserfunction) to load it during parsing instead.
+
+   <!-- !test in using from to load later -->
+
+   ```js
+   // If we tried to pass `word` directly, we'd get an error like
+   //
+   //     ReferenceError: Cannot access 'word' before initialization
+   //
+   const exclamation = p.seq(p.from(() => word), p.string('!'))
+
+   const word = p.regex(/\w+/)
+
+   console.log(exclamation('Hi!'))
+   ```
+
+   <!-- !test out using from to load later -->
+
+   ```
+   { status: true, index: 3, value: [ 'Hi', '!' ] }
+   ```
 
 ## License
 
