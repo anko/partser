@@ -21,11 +21,12 @@
   "devDependencies": {
     "standard": "^14.3.2",
     "tape": "^4.13.2",
-    "tests-ex-markdown": "^3.0.0"
+    "tests-ex-markdown": "^4.0.0"
   },
   "dependencies": {},
   "scripts": {
-    "test": "standard && node test.js",
+    "test": "npm run-script test-code && npm run-script test-docs",
+    "test-code": "standard && node test.js",
     "test-docs": "txm readme.markdown"
   }
 }
