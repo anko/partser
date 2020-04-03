@@ -567,7 +567,7 @@ parser to be, based on the `environment`, or otherwise.
 
 <!-- !test in from -->
 
-    let parser = p.from((env) => env.myParser)
+    const parser = p.from((env) => env.myParser)
 
     console.log(parser('abc', { myParser: p.string('abc') }))
     console.log(parser('something else', { myParser: p.all }))

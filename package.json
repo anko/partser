@@ -21,7 +21,7 @@
   "devDependencies": {
     "standard": "^14.3.2",
     "tape": "^4.13.2",
-    "tests-ex-markdown": "^4.0.0"
+    "tests-ex-markdown": "^5.0.2"
   },
   "dependencies": {},
   "scripts": {
