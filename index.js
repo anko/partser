@@ -314,7 +314,7 @@ Partser.regex = (re, group = 0) => {
     if (match) {
       const fullMatch = match[0]
       const groupMatch = match[group]
-      if (groupMatch != null) return makeSuccess(i + fullMatch.length, groupMatch)
+      return makeSuccess(i + fullMatch.length, groupMatch)
     }
 
     return makeFailure(i, expected)
