@@ -54,6 +54,8 @@ tape('any', (t) => {
 })
 tape('test', (t) => {
   parseOk(t, p.test((x) => x === 'a'), 'a', 'a')
+  parseFail(t, p.test((x) => x === 'a'), 'b', 0,
+    ['a character matching (x) => x === \'a\''])
 
   const usesEnv = p.test((x, { whatCharacter }) => x === whatCharacter)
   t.deepEquals(
