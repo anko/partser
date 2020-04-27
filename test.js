@@ -325,6 +325,8 @@ tape('alt', (t) => {
     value: 'B',
     index: 1
   }, 'passes env to subsequent')
+
+  t.throws(() => { p.alt() }, TypeError)
 })
 
 tape('times', (t) => {
