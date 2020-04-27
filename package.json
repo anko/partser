@@ -19,6 +19,8 @@
   "main": "index.js",
   "license": "ISC",
   "devDependencies": {
+    "coveralls": "^3.1.0",
+    "nyc": "^15.0.1",
     "standard": "^14.3.2",
     "tape": "^5.0.0",
     "txm": "^7.3.0"
@@ -27,6 +29,8 @@
   "scripts": {
     "test": "npm run-script test-code && npm run-script test-docs",
     "test-code": "standard && node test.js",
-    "test-docs": "txm readme.markdown"
+    "test-docs": "txm readme.markdown",
+    "test-code-with-coverage": "nyc npm run-script test-code",
+    "upload-coverage-report": "nyc report --reporter=text-lcov | coveralls"
   }
 }

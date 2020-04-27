@@ -3,5 +3,6 @@ node_js:
   - node
   - lts/*
 script:
-  - npm test
   - npm run test-docs
+  - npm run-script test-code-with-coverage
+  - npm run-script upload-coverage-report
