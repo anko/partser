@@ -727,8 +727,13 @@ creates) have these limitations:
  - [Parsimmon](https://github.com/jneen/parsimmon) is the project this library
    was forked from.  It can recognise the same category of grammars, and has a
    more abstract API, with a language construction DSL and a call-chaining
-   syntax that some prefer.  At the time writing it doesn't support
-   user-defined nested environments or clone/replace.
+   syntax that some prefer.  It doesn't support user-defined nested
+   environments, and has relatively limited features for modifying parsing
+   logic during parsing.
+ - [Nearley](https://github.com/kach/nearley) is much more performant, can
+   parse left-recursive grammars, and even handles ambiguity!  However, it is
+   much more rigid in design: it does not have parse environments, and cannot
+   modify the parser during parsing.
 
 ## License
 
