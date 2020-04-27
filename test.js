@@ -609,9 +609,9 @@ tape('self-reference', (t) => {
 })
 
 tape('formatError', (t) => {
-  const a = p.string('a')
-  const source = 'not a'
-  const error = a(source)
+  const ab = p.alt(p.string('a'), p.string('b'))
+  const source = 'x'
+  const error = ab(source)
   t.equals(p.formatError(source, error),
-    "expected 'a' at character 0, got 'not a'")
+    "expected one of 'b', 'a' at character 0, got 'x'")
 })
