@@ -470,6 +470,8 @@ tape('chain', (t) => {
   })
   parseOk(t, weapon, 'axe', 'axe')
   parseOk(t, weapon, 'spear', 'spear')
+  parseFail(t, weapon, 'a', 1, ['\'xe\''])
+  parseFail(t, weapon, '', 0, ['/[as]/'])
   const withEnv = p.map(
     p.chain(p.string('a'), (result, env) => env.chain()),
     (x, env) => env.after(x))
