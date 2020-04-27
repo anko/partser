@@ -159,7 +159,7 @@ Partser.from = (lookup) => {
     if (isParser(foundParser)) {
       return foundParser._(stream, i, env)
     } else {
-      throw Error(`Partser.from: Non-parser value ${toString(foundParser)} from ${lookup}`)
+      throw TypeError(`Partser.from: Non-parser value ${toString(foundParser)} from ${lookup}`)
     }
   })
 }
