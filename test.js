@@ -611,9 +611,25 @@ tape('self-reference', (t) => {
 })
 
 tape('formatError', (t) => {
-  const ab = p.alt(p.string('a'), p.string('b'))
-  const source = 'x'
-  const error = ab(source)
-  t.equals(p.formatError(source, error),
-    "expected one of 'b', 'a' at character 0, got 'x'")
+  {
+    const ab = p.alt(p.string('a'), p.string('b'))
+    const source = 'x'
+    const error = ab(source)
+    t.equals(p.formatError(source, error),
+      "expected one of 'b', 'a' at character 0, got 'x'")
+  }
+  {
+    const ab = p.string('a')
+    const source = ''
+    const error = ab(source)
+    t.equals(p.formatError(source, error),
+      "expected 'a' at character 0, got end of input")
+  }
+  {
+    const ab = p.string('!')
+    const source = 'abcdefghijklmnopqrstuvwxyz'
+    const error = ab(source)
+    t.equals(p.formatError(source, error),
+      "expected '!' at character 0, got 'abcdefghij...'")
+  }
 })

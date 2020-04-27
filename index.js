@@ -98,13 +98,16 @@ const formatExpected = (expected) => {
 
 const formatGot = (stream, error) => {
   const i = error.index
+  const locationDescription = ` at character ${i}`
 
-  if (i === stream.length) return ', got the end of the stream'
-
-  const prefix = (i > 0 ? "'..." : "'")
-  const suffix = (stream.length - i > 12 ? "...'" : "'")
-
-  return ' at character ' + i + ', got ' + prefix + stream.slice(i, i + 12) + suffix
+  if (i === stream.length) return `${locationDescription}, got end of input`
+  else {
+    const amountOfContext = 10
+    const remainingCharsInStream = stream.length - i
+    let actualValue = stream.slice(i, i + amountOfContext)
+    if (remainingCharsInStream > i + amountOfContext) actualValue += '...'
+    return `${locationDescription}, got '${actualValue}'`
+  }
 }
 
 Partser.formatError = (stream, error) =>
