@@ -669,8 +669,9 @@ Takes an `input` that you parsed, and the `result` of a failed parse of that
 input.  Produces a human-readable error string stating what went wrong, where
 it went wrong, and what was expected instead.
 
-Nice for generating human-readable error messages, if you don't want to do it
-yourself.
+Outputs a basic human-readable error message which exact format is not
+guaranteed.  For production use, you should probably write your own error
+formatter, so you can have nice things like coloured output, and more context.
 
 <!-- !test in formatError -->
 
