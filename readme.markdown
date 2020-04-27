@@ -1,4 +1,4 @@
-# partser [![](https://img.shields.io/npm/v/partser.svg?style=flat-square)](https://www.npmjs.com/package/partser) [![](https://img.shields.io/travis/anko/partser.svg?style=flat-square)](https://travis-ci.org/anko/partser) [![](https://img.shields.io/david/anko/partser.svg?style=flat-square)](https://david-dm.org/anko/partser)
+# partser [![](https://img.shields.io/npm/v/partser.svg?style=flat-square)](https://www.npmjs.com/package/partser) [![](https://img.shields.io/travis/anko/partser.svg?style=flat-square)](https://travis-ci.org/anko/partser) [![](https://img.shields.io/david/anko/partser.svg?style=flat-square)](https://david-dm.org/anko/partser) [![](https://img.shields.io/coveralls/github/anko/partser?style=flat-square)](https://coveralls.io/github/anko/partser)
 
 Partser is a combinatory parsing library for JS, for writing LL(∞) parsers made
 of other parsers.  It is *ridiculously flexible*: Your parsers can modify their
