@@ -1,16 +1,13 @@
 # partser [![](https://img.shields.io/npm/v/partser.svg?style=flat-square)](https://www.npmjs.com/package/partser) [![](https://img.shields.io/travis/anko/partser.svg?style=flat-square)](https://travis-ci.org/anko/partser) [![](https://img.shields.io/david/anko/partser.svg?style=flat-square)](https://david-dm.org/anko/partser) [![](https://img.shields.io/coveralls/github/anko/partser?style=flat-square)](https://coveralls.io/github/anko/partser)
 
 Partser is a combinatory parsing library for JS, for writing LL(∞) parsers made
-of other parsers.  It is *ridiculously flexible*: Your parsers can modify their
-parsing logic even during parsing, by introducing, redefining, or modifying
-sub-parsers inside nested scoped environments, even based on partial parse
-results.
+of other parsers.
 
-If you'd prefer a more abstract API and don't need advanced features like
-environments, try [Parsimmon](https://github.com/jneen/parsimmon), which this
-project was forked from.
+It is *ridiculously flexible*: Your parsers can modify their parsing logic even
+during parsing, by introducing, redefining, or modifying sub-parsers inside
+nested scoped environments, even based on partial parse results.
 
-## Motivating example
+## Example
 
 Here's a demonstration of a string literal parser that reads the quote symbol
 that it should use from the environment object passed by the caller:
@@ -713,6 +710,25 @@ formatter, so you can have nice things like coloured output, and more context.
    ```
    { status: true, index: 3, value: [ 'Hi', '!' ] }
    ```
+
+## Limitations
+
+[LL](https://en.wikipedia.org/wiki/LL_parser)(∞) parsers (like this library
+creates) have these limitations:
+
+ - No [left recursion](https://en.wikipedia.org/wiki/Left_recursion).  Grammars
+   that contain left recursion will recurse infinitely and overflow the stack.
+ - No [ambiguity](https://en.wikipedia.org/wiki/Ambiguous_grammar).  Ambiguous
+   grammars are allowed and will parse, but will only return the first success
+   or the last failure, not all possible interpretations.
+
+## Related libraries
+
+ - [Parsimmon](https://github.com/jneen/parsimmon) is the project this library
+   was forked from.  It can recognise the same category of grammars, and has a
+   more abstract API, with a language construction DSL and a call-chaining
+   syntax that some prefer.  At the time writing it doesn't support
+   user-defined nested environments or clone/replace.
 
 ## License
 
