@@ -72,20 +72,21 @@ const makeSuccess = (index, value) =>
 const makeFailure = (index, expected) =>
   ({ status: false, index, value: [expected] })
 
-const mergeReplies = (() => {
+const mergeOver = (() => {
   const furthest = (result) => result.status ? -1 : result.index
-  const expected = (result) => result.status ? [] : result.value
+  const expected = (result) => result.value
 
-  return (prev, next) => {
-    if (!next || prev.status || furthest(prev) > furthest(next)) return prev
+  // Given a parse result and a previously existing failure, return whichever
+  // is "better" (either because it succeeded, or because it matched more of
+  // the input before before failing).  If they are equal failures, combine
+  // their 'expected' values.
+  return (next, previous) => {
+    if (!previous || next.status || furthest(next) > furthest(previous)) return next
     else {
-      // The `next` result is never a success, so we must be merging failures
       return {
         status: false,
-        index: prev.index,
-        value: (furthest(prev) === furthest(next))
-          ? expected(prev).concat(expected(next))
-          : expected(next)
+        index: next.index,
+        value: expected(next).concat(expected(previous))
       }
     }
   }
@@ -171,13 +172,13 @@ Partser.seq = (...parsers) => {
     const accum = new Array(parsers.length)
 
     for (let j = 0; j < parsers.length; j += 1) {
-      result = mergeReplies(parsers[j]._(stream, i, env), result)
+      result = mergeOver(parsers[j]._(stream, i, env), result)
       if (!result.status) return result
       accum[j] = result.value
       i = result.index
     }
 
-    return mergeReplies(makeSuccess(i, accum), result)
+    return mergeOver(makeSuccess(i, accum), result)
   })
 }
 
@@ -200,7 +201,7 @@ Partser.alt = (...parsers) => {
   return Parser((stream, i, env) => {
     let result
     for (let j = 0; j < parsers.length; j += 1) {
-      result = mergeReplies(parsers[j]._(stream, i, env), result)
+      result = mergeOver(parsers[j]._(stream, i, env), result)
       if (result.status) return result
     }
     return result
@@ -224,7 +225,7 @@ Partser.times = (parser, min, max) => {
     // if we mismatch before reaching `min` times.
     for (; times < min; ++times) {
       const result = parser._(stream, index, env)
-      const mergedResult = mergeReplies(result, previousResult)
+      const mergedResult = mergeOver(result, previousResult)
       if (result.status) {
         previousResult = mergedResult
         index = result.index
@@ -236,7 +237,7 @@ Partser.times = (parser, min, max) => {
     // mismatch, and return a success with whatever we've got by then.
     for (; times < max; ++times) {
       const result = parser._(stream, index, env)
-      const mergedResult = mergeReplies(result, previousResult)
+      const mergedResult = mergeOver(result, previousResult)
       if (result.status) {
         previousResult = mergedResult
         index = result.index
@@ -254,7 +255,7 @@ Partser.map = (parser, fn) => {
   return Parser((stream, i, env) => {
     const result = parser._(stream, i, env)
     if (!result.status) return result
-    return mergeReplies(makeSuccess(result.index, fn(result.value, env)), result)
+    return mergeOver(makeSuccess(result.index, fn(result.value, env)), result)
   })
 }
 
@@ -396,7 +397,7 @@ Partser.chain = (parser, f) => {
     const result = parser._(stream, i, env)
     if (!result.status) return result
     const nextParser = f(result.value, env)
-    return mergeReplies(nextParser._(stream, result.index, env), result)
+    return mergeOver(nextParser._(stream, result.index, env), result)
   })
 }
 
