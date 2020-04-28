@@ -121,15 +121,15 @@ Partser.except = (allowed, forbidden) => {
     const forbiddenResult = forbidden._(stream, i, env)
     if (forbiddenResult.status) {
       return makeFailure(i, `something that is not '${forbiddenResult.value}'`)
-      // This error text is relatively unhelpful, as it only says what was
-      // *not* expected, but this is all we can do.  Parsers only return an
-      // "expected" value when they fail, and this fail branch is only
-      // triggered when the forbidden parser succeeds.  Moreover, a parser's
-      // expected value is not constant: it changes as it consumes more
-      // characters.
+      // This expected-value text's vagueness is unfortunate.  It would be more
+      // helpful if it said what *was* expected rather than what *was not*.
+      // It's due to an architectural limitation with this library:  Parsers
+      // only generate an expected-value dynamically when they fail.  This
+      // means we can't just ask a parser what its expected value is.
       //
-      // Ensure that it's clear to users that they really should use `desc`
-      // to give instances of this parser a clearer name.
+      // A more informative error could be enabled in the future by extending
+      // the parser API with a method of asking the parser what it would
+      // hypothetically expect to read next, if called at a given offset `i`.
     } else {
       const allowedResult = allowed._(stream, i, env)
       if (allowedResult.status) return allowedResult
