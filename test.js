@@ -1,14 +1,6 @@
 'use strict'
 const p = require('./index')
-
-// Wrap tape to automatically t.end(), since our tests are all synchronous.
-const tape = (name, testFunc) => {
-  const tapeModule = require('tape')
-  tapeModule(name, (t) => {
-    testFunc(t)
-    t.end()
-  })
-}
+const tape = require('tape')
 
 // Helpers for checking whether a parse succeeded as expected.  Nice as
 // adapters, in case the output format changes.
@@ -33,24 +25,30 @@ const parseFail = (t, parser, input, index, expected) => {
 
 tape('isParser', (t) => {
   t.ok(p.isParser(p.string('a')))
+  t.end()
 })
 tape('Object.keys is unpolluted', (t) => {
   t.deepEquals(Object.keys(p.string('a')), ['_'])
+  t.end()
 })
 
 tape('string', (t) => {
   parseOk(t, p.string('a'), 'a', 'a')
+  t.end()
 })
 tape('regex', (t) => {
   parseOk(t, p.regex(/a+/), 'aa', 'aa')
   parseOk(t, p.regex(/(a+)b/, 1), 'aab', 'aa')
+  t.end()
 })
 tape('all', (t) => {
   parseOk(t, p.all, 'aaa', 'aaa')
+  t.end()
 })
 tape('any', (t) => {
   parseOk(t, p.any, 'a', 'a')
   parseOk(t, p.any, 'b', 'b')
+  t.end()
 })
 tape('test', (t) => {
   parseOk(t, p.test((x) => x === 'a'), 'a', 'a')
@@ -65,21 +63,27 @@ tape('test', (t) => {
       value: 'x',
       index: 1
     }, 'also passes environment to test function')
+  t.end()
 })
 tape('eof', (t) => {
   parseOk(t, p.eof, '', null)
+  t.end()
 })
 tape('succeed', (t) => {
   parseOk(t, p.succeed('what'), '', 'what')
+  t.end()
 })
 tape('fail', (t) => {
   parseFail(t, p.fail('what'), 'a', 0, ['what'])
+  t.end()
 })
 tape('index', (t) => {
   parseOk(t, p.index, '', 0)
+  t.end()
 })
 tape('lcIndex', (t) => {
   parseOk(t, p.lcIndex, '', { line: 1, column: 1, offset: 0 })
+  t.end()
 })
 tape('custom `p.any` parser', (t) => {
   const customAny = p.custom((stream, i) => {
@@ -97,6 +101,7 @@ tape('custom `p.any` parser', (t) => {
   parseFail(t, customAny, '', 0, ['any character'])
   parseOk(t, p.map(customAny, x => x.toUpperCase()),
     'a', 'A')
+  t.end()
 })
 
 tape('custom parser that just calls `p.any`', (t) => {
@@ -107,6 +112,7 @@ tape('custom parser that just calls `p.any`', (t) => {
   parseFail(t, customAny, '', 0, ['any character'])
   parseOk(t, p.map(customAny, x => x.toUpperCase()),
     'a', 'A')
+  t.end()
 })
 
 tape('from: can be used to implement a recursive parser', (t) => {
@@ -121,6 +127,7 @@ tape('from: can be used to implement a recursive parser', (t) => {
   )
 
   parseOk(t, list, '(x(x))', ['x', ['x']])
+  t.end()
 })
 
 tape('p.from gives useful error if resolved value is not function', (t) => {
@@ -133,6 +140,7 @@ tape('p.from gives useful error if resolved value is not function', (t) => {
     lookupFunction.toString = () => 'custom toString'
     p.from(lookupFunction)('asd')
   }, /Partser.from\(custom toString\): Not a parser: \[object Null\]/)
+  t.end()
 })
 
 tape('custom parsers can take whatever instead of strings', (t) => {
@@ -169,6 +177,7 @@ tape('custom parsers can take whatever instead of strings', (t) => {
     value: 6,
     index: 5
   })
+  t.end()
 })
 
 //
@@ -203,6 +212,7 @@ tape('except', (t) => {
       index: 0
     }, 'passes env for failure case')
   })()
+  t.end()
 })
 
 tape('seq', (t) => {
@@ -213,6 +223,7 @@ tape('seq', (t) => {
     value: ['x', 'A'],
     index: 2
   }, 'passes env')
+  t.end()
 })
 
 tape('seq with multiple empty parsers', (t) => {
@@ -222,6 +233,7 @@ tape('seq with multiple empty parsers', (t) => {
     value: ['a', 'b'],
     index: 0
   })
+  t.end()
 })
 
 tape('subEnv can be modification of existing env', (t) => {
@@ -232,6 +244,7 @@ tape('subEnv can be modification of existing env', (t) => {
     value: 'Hello, world',
     index: 1
   }, 'passes env')
+  t.end()
 })
 
 tape('subEnv goes out of scope after', (t) => {
@@ -243,6 +256,7 @@ tape('subEnv goes out of scope after', (t) => {
     value: ['Hello, world', 'Hello, '],
     index: 2
   }, 'passes env')
+  t.end()
 })
 
 tape('subEnv environments can be modified by map', (t) => {
@@ -266,6 +280,7 @@ tape('subEnv environments can be modified by map', (t) => {
     ],
     index: 2
   }, 'passes env')
+  t.end()
 })
 
 tape('from: can get parser from environment', (t) => {
@@ -301,6 +316,7 @@ tape('from: can get parser from environment', (t) => {
     value: ['!', 'a'],
     index: 2
   }, 'reads using whatever parser the env contained')
+  t.end()
 })
 
 tape('alt', (t) => {
@@ -327,6 +343,7 @@ tape('alt', (t) => {
   }, 'passes env to subsequent')
 
   t.throws(() => { p.alt() }, TypeError)
+  t.end()
 })
 
 tape('times', (t) => {
@@ -367,6 +384,7 @@ tape('times', (t) => {
     value: ['A', 'A', 'A', 'A', 'A'],
     index: 5
   }, 'passes env to all')
+  t.end()
 })
 
 tape('desc', (t) => {
@@ -381,6 +399,7 @@ tape('desc', (t) => {
     value: 'A',
     index: 1
   }, 'passes env')
+  t.end()
 })
 
 tape('mark', (t) => {
@@ -389,6 +408,7 @@ tape('mark', (t) => {
   parseOk(t, aMark, 'a', { value: 'a', start: 0, end: 1 })
   parseOk(t, aMark, 'aa', { value: 'aa', start: 0, end: 2 })
   parseFail(t, aMark, 'b', 0, ['EOF'])
+  t.end()
 })
 
 tape('lcMark', (t) => {
@@ -409,6 +429,7 @@ tape('lcMark', (t) => {
     end: { offset: 3, line: 2, column: 2 }
   })
   parseFail(t, aMark, 'b', 0, ['EOF'])
+  t.end()
 })
 
 tape('map', (t) => {
@@ -423,6 +444,7 @@ tape('map', (t) => {
     value: 'A',
     index: 1
   }, 'passes env')
+  t.end()
 })
 
 tape('recursive parser with env stack corresponding to list nesting', (t) => {
@@ -458,6 +480,7 @@ tape('recursive parser with env stack corresponding to list nesting', (t) => {
     value: [1, [2]],
     index: 6
   }, 'env stack 2')
+  t.end()
 })
 
 tape('chain', (t) => {
@@ -483,6 +506,7 @@ tape('chain', (t) => {
     value: 'B',
     index: 2
   }, 'passes env')
+  t.end()
 })
 
 //
@@ -529,6 +553,7 @@ tape('replace', (t) => {
   p.replace(a, p.regex(/a+/))
   parseOk(t, acbd, 'aaac', 'c')
   parseFail(t, acbd, 'aaad', 3, ["'c'"])
+  t.end()
 })
 
 tape('replace with except', (t) => {
@@ -537,6 +562,7 @@ tape('replace with except', (t) => {
   p.replace(a, p.string('b'))
   parseOk(t, anyButA, 'a', 'a')
   parseFail(t, anyButA, 'b', 0, ["something that is not 'b'"])
+  t.end()
 })
 
 tape('replace with p.alt', (t) => {
@@ -547,6 +573,7 @@ tape('replace with p.alt', (t) => {
   parseOk(t, aOrB, 'b', 'b')
   parseOk(t, aOrB, 'c', 'hi')
   parseFail(t, aOrB, 'a', 0, ["'b'", "'c'"])
+  t.end()
 })
 
 tape('replace with p.alt', (t) => {
@@ -567,6 +594,7 @@ tape('replace with p.alt', (t) => {
 
   parseOk(t, expression, 'a', 'a')
   parseOk(t, expression, '()', [])
+  t.end()
 })
 
 tape('clone', (t) => {
@@ -597,6 +625,7 @@ tape('clone', (t) => {
   p.replace(a, p.alt(p.clone(a), p.string('b')))
   parseOk(t, a, 'a', 'a')
   parseOk(t, a, 'b', 'b')
+  t.end()
 })
 
 tape('self-reference', (t) => {
@@ -612,6 +641,7 @@ tape('self-reference', (t) => {
   parseOk(t, list, '()', [{ v: [] }])
   parseOk(t, list, '()()', [{ v: [] }, { v: [] }])
   parseOk(t, list, '(())', [{ v: [{ v: [] }] }])
+  t.end()
 })
 
 tape('formatError', (t) => {
@@ -636,4 +666,5 @@ tape('formatError', (t) => {
     t.equals(p.formatError(source, error),
       "expected '!' at character 0, got 'abcdefghij...'")
   }
+  t.end()
 })
