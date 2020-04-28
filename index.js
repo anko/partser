@@ -1,17 +1,33 @@
 'use strict'
+
 const Partser = {}
+module.exports = Partser
 
-const toString = thing => Object.prototype.toString.call(thing)
+//
+// This WeakMap stores a `x -> Bool` mapping of whether the value `x` is a
+// parser or not.  As it holds weak references, its entries are
+// garbage-collected with its keys, so we don't leak memory even if we never
+// remove entries.
+//
+// Q:  Why not make `Parser` a class and use `instanceof`?
+//
+// A:  Because parsers should be callable, and instances of a class aren't.
+// Except if your class extends the Function built-in, but last I read about
+// that sorcery, I almost opened a portal to hell.  (It's far more complicated
+// than this solution.)
+//
+const parsersMap = new WeakMap()
+const isParser = p => parsersMap.has(p)
+Partser.isParser = isParser
 
-const isParser = (p) => {
-  return (typeof p === 'function') && p[parserSymbol] === true
-}
+const toString = x => Object.prototype.toString.call(x)
 
-// For ensuring we have the right argument types
-const assert = (name, check) => {
-  return (fName, input) => {
-    if (!check(input)) {
-      throw new TypeError(`Partser.${fName}: Not a ${name}: ${toString(input)}`)
+// Helpers for checking argument types
+const assert = (typeName, check) => {
+  return (functionName, value) => {
+    if (!check(value)) {
+      throw new TypeError(
+        `Partser.${functionName}: Not a ${typeName}: ${toString(value)}`)
     }
   }
 }
@@ -21,20 +37,9 @@ const assertRegexp = assert('regex', (x) => x instanceof RegExp)
 const assertFunction = assert('function', (x) => typeof x === 'function')
 const assertString = assert('string', (x) => typeof x === 'string')
 
-const skip = (parser, next) => {
-  return Partser.map(Partser.seq(parser, next), ([x, _]) => x)
+const skip = (...parsers) => {
+  return Partser.map(Partser.seq(...parsers), ([x]) => x) // first only
 }
-
-// A symbol that's added as a non-{enumerable,writable,configurable} property
-// on every Parser instance, so we can distinguish them as clearly as possible
-// from ordinary Functions.
-//
-// Ideally, we'd instead be making Parser a class so instanceof would work, but
-// you can't do that while also having the instances of the class be callable,
-// which I *really* want as an API.  It might be possible to do by extending
-// the Function built-in, but that stuff is dark sorcery that I'd rather not
-// have to think about.
-const parserSymbol = Symbol('Partser parser identifying mark')
 
 // Base parser constructor
 const Parser = Partser.Parser = (behaviour) => {
@@ -55,16 +60,9 @@ const Parser = Partser.Parser = (behaviour) => {
   const parser = (stream, env, index = 0) =>
     skip(parser, Partser.eof)._(stream, index, env)
   parser._ = behaviour
-  Object.defineProperty(parser, parserSymbol, {
-    value: true,
-    writable: false,
-    enumerable: false,
-    configurable: false
-  })
+  parsersMap.set(parser, true)
   return parser
 }
-
-Partser.isParser = isParser
 
 const makeSuccess = (index, value) =>
   ({ status: true, index, value })
@@ -81,8 +79,9 @@ const mergeOver = (() => {
   // the input before before failing).  If they are equal failures, combine
   // their 'expected' values.
   return (next, previous) => {
-    if (!previous || next.status || furthest(next) > furthest(previous)) return next
-    else {
+    if (!previous || next.status || furthest(next) > furthest(previous)) {
+      return next
+    } else {
       return {
         status: false,
         index: next.index,
@@ -356,19 +355,20 @@ Partser.test = (predicate) => {
 Partser.index = Parser((stream, i) => makeSuccess(i, i))
 
 Partser.lcIndex = Parser((stream, i) => {
-  // Like the usual `index` function, but emitting an object that contains
-  // line and column indices in addition to the character-based one.
+  // Like the usual `index` function, but emitting an object that contains line
+  // and column indices in addition to the character-based one.  Less
+  // performant, but often convenient.
 
   const lines = stream.slice(0, i).split('\n')
 
-  // Unlike the character offset, lines and columns are 1-based.
-  const lineWeAreUpTo = lines.length
-  const columnWeAreUpTo = lines[lines.length - 1].length + 1
+  // Note:  The character offset is 0-based; lines and columns are 1-based.
+  const currentLine = lines.length
+  const currentColumn = lines[lines.length - 1].length + 1
 
   return makeSuccess(i, {
     offset: i,
-    line: lineWeAreUpTo,
-    column: columnWeAreUpTo
+    line: currentLine,
+    column: currentColumn
   })
 })
 
@@ -387,15 +387,13 @@ Partser.replace = (original, replacement) => {
   original._ = replacement._
 }
 
-Partser.chain = (parser, f) => {
+Partser.chain = (parser, lookup) => {
   assertParser('chain', parser)
-  assertFunction('chain', f)
+  assertFunction('chain', lookup)
   return Parser((stream, i, env) => {
     const result = parser._(stream, i, env)
     if (!result.status) return result
-    const nextParser = f(result.value, env)
+    const nextParser = lookup(result.value, env)
     return mergeOver(nextParser._(stream, result.index, env), result)
   })
 }
-
-module.exports = Partser
