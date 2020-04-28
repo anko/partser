@@ -27,8 +27,8 @@
   },
   "dependencies": {},
   "scripts": {
-    "test": "npm run-script test-code && npm run-script test-docs",
-    "test-code": "node test.js && standard",
+    "test": "npm run-script test-code-with-coverage && npm run-script test-docs && standard",
+    "test-code": "node test.js",
     "test-docs": "txm readme.markdown",
     "test-code-with-coverage": "nyc npm run-script test-code",
     "upload-coverage-report": "nyc report --reporter=text-lcov | coveralls"
