@@ -57,8 +57,8 @@ const Parser = Partser.Parser = (behaviour) => {
   // parser function itself actually parses for the base behaviour `_` followed
   // by `eof` (end of input).  Internally, we never use this surface API.
   //
-  const parser = (stream, env, index = 0) =>
-    skip(parser, Partser.eof)._(stream, index, env)
+  const parser = (input, env, index = 0) =>
+    skip(parser, Partser.eof)._(input, index, env)
   parser._ = behaviour
   parsersMap.set(parser, true)
   return parser
@@ -96,28 +96,28 @@ const formatExpected = (expected) => {
   else return 'one of ' + expected.join(', ')
 }
 
-const formatGot = (stream, error) => {
+const formatGot = (input, error) => {
   const i = error.index
   const locationDescription = ` at character ${i}`
 
-  if (i === stream.length) return `${locationDescription}, got end of input`
+  if (i === input.length) return `${locationDescription}, got end of input`
   else {
     const amountOfContext = 10
-    const remainingCharsInStream = stream.length - i
-    let actualValue = stream.slice(i, i + amountOfContext)
-    if (remainingCharsInStream > i + amountOfContext) actualValue += '...'
+    const remainingCharsInInput = input.length - i
+    let actualValue = input.slice(i, i + amountOfContext)
+    if (remainingCharsInInput > i + amountOfContext) actualValue += '...'
     return `${locationDescription}, got '${actualValue}'`
   }
 }
 
-Partser.formatError = (stream, error) =>
-  'expected ' + formatExpected(error.value) + formatGot(stream, error)
+Partser.formatError = (input, error) =>
+  'expected ' + formatExpected(error.value) + formatGot(input, error)
 
 Partser.except = (allowed, forbidden) => {
   assertParser('except', allowed)
   assertParser('except', forbidden)
-  return Parser((stream, i, env) => {
-    const forbiddenResult = forbidden._(stream, i, env)
+  return Parser((input, i, env) => {
+    const forbiddenResult = forbidden._(input, i, env)
     if (forbiddenResult.status) {
       return makeFailure(i, `something that is not '${forbiddenResult.value}'`)
       // This expected-value text's vagueness is unfortunate.  It would be more
@@ -130,7 +130,7 @@ Partser.except = (allowed, forbidden) => {
       // the parser API with a method of asking the parser what it would
       // hypothetically expect to read next, if called at a given offset `i`.
     } else {
-      const allowedResult = allowed._(stream, i, env)
+      const allowedResult = allowed._(input, i, env)
       if (allowedResult.status) return allowedResult
       else {
         return makeFailure(i, formatExpected(allowedResult.value) +
@@ -144,31 +144,31 @@ Partser.except = (allowed, forbidden) => {
 // on the existing one.
 Partser.subEnv = (baseParser, deriveEnv) => {
   assertFunction('subEnv', deriveEnv)
-  return Parser((stream, i, env) => {
+  return Parser((input, i, env) => {
     const newEnv = deriveEnv(env)
-    return baseParser._(stream, i, newEnv)
+    return baseParser._(input, i, newEnv)
   })
 }
 
 Partser.from = (lookup) => {
   assertFunction('from', lookup)
-  return Parser((stream, i, env) => {
+  return Parser((input, i, env) => {
     const foundParser = lookup(env)
     // To aid in debugging, if this isn't a parser, then also mention the
     // lookup function in the assert message.
     assert('parser', isParser)(`from(${lookup})`, foundParser)
-    return foundParser._(stream, i, env)
+    return foundParser._(input, i, env)
   })
 }
 
 Partser.seq = (...parsers) => {
   parsers.forEach((x) => assertParser('seq', x))
-  return Parser((stream, i, env) => {
+  return Parser((input, i, env) => {
     let result
     const accum = new Array(parsers.length)
 
     for (let j = 0; j < parsers.length; j += 1) {
-      result = mergeOver(parsers[j]._(stream, i, env), result)
+      result = mergeOver(parsers[j]._(input, i, env), result)
       if (!result.status) return result
       accum[j] = result.value
       i = result.index
@@ -194,10 +194,10 @@ Partser.alt = (...parsers) => {
   if (parsers.length === 0) throw TypeError('Partser.alt: Zero alternates')
   parsers.forEach((x) => assertParser('alt', x))
 
-  return Parser((stream, i, env) => {
+  return Parser((input, i, env) => {
     let result
     for (let j = 0; j < parsers.length; j += 1) {
-      result = mergeOver(parsers[j]._(stream, i, env), result)
+      result = mergeOver(parsers[j]._(input, i, env), result)
       if (result.status) return result
     }
     return result
@@ -211,7 +211,7 @@ Partser.times = (parser, min, max) => {
   assertNumber('times', min)
   assertNumber('times', max)
 
-  return Parser((stream, i, env) => {
+  return Parser((input, i, env) => {
     const successes = []
     let times = 0
     let index = i
@@ -220,7 +220,7 @@ Partser.times = (parser, min, max) => {
     // First require successes until `min`.  In other words, return failure
     // if we mismatch before reaching `min` times.
     for (; times < min; ++times) {
-      const result = parser._(stream, index, env)
+      const result = parser._(input, index, env)
       const mergedResult = mergeOver(result, previousResult)
       if (result.status) {
         previousResult = mergedResult
@@ -232,7 +232,7 @@ Partser.times = (parser, min, max) => {
     // Then allow successes up until `max`.  In other words, just stop on
     // mismatch, and return a success with whatever we've got by then.
     for (; times < max; ++times) {
-      const result = parser._(stream, index, env)
+      const result = parser._(input, index, env)
       const mergedResult = mergeOver(result, previousResult)
       if (result.status) {
         previousResult = mergedResult
@@ -248,8 +248,8 @@ Partser.times = (parser, min, max) => {
 Partser.map = (parser, fn) => {
   assertFunction('map', fn)
 
-  return Parser((stream, i, env) => {
-    const result = parser._(stream, i, env)
+  return Parser((input, i, env) => {
+    const result = parser._(input, i, env)
     if (!result.status) return result
     return mergeOver(makeSuccess(result.index, fn(result.value, env)), result)
   })
@@ -275,8 +275,8 @@ Partser.desc = (parser, expected) => {
   assertParser('desc', parser)
   assertString('desc', expected)
 
-  return Parser((stream, i, env) => {
-    const reply = parser._(stream, i, env)
+  return Parser((input, i, env) => {
+    const reply = parser._(input, i, env)
     if (!reply.status) reply.value = [expected]
     return reply
   })
@@ -288,8 +288,8 @@ Partser.string = (str) => {
   const len = str.length
   const expected = `'${str}'`
 
-  return Parser((stream, i) => {
-    const head = stream.slice(i, i + len)
+  return Parser((input, i) => {
+    const head = input.slice(i, i + len)
 
     if (head === str) return makeSuccess(i + len, head)
     else return makeFailure(i, expected)
@@ -305,8 +305,8 @@ Partser.regex = (re, group = 0) => {
     `${re}`.slice(`${re}`.lastIndexOf('/') + 1))
   const expected = `${re}`
 
-  return Parser((stream, i) => {
-    const match = anchored.exec(stream.slice(i))
+  return Parser((input, i) => {
+    const match = anchored.exec(input.slice(i))
 
     if (match) {
       const fullMatch = match[0]
@@ -319,32 +319,32 @@ Partser.regex = (re, group = 0) => {
 }
 
 Partser.succeed = (value) =>
-  Parser((stream, i) => makeSuccess(i, value))
+  Parser((input, i) => makeSuccess(i, value))
 
 Partser.fail = (expected) => {
   assertString('fail', expected)
-  return Parser((stream, i) => makeFailure(i, expected))
+  return Parser((input, i) => makeFailure(i, expected))
 }
 
-Partser.any = Parser((stream, i) => {
-  if (i >= stream.length) return makeFailure(i, 'any character')
-  return makeSuccess(i + 1, stream.charAt(i))
+Partser.any = Parser((input, i) => {
+  if (i >= input.length) return makeFailure(i, 'any character')
+  return makeSuccess(i + 1, input.charAt(i))
 })
 
-Partser.all = Parser((stream, i) =>
-  makeSuccess(stream.length, stream.slice(i)))
+Partser.all = Parser((input, i) =>
+  makeSuccess(input.length, input.slice(i)))
 
-Partser.eof = Parser((stream, i) => {
-  if (i < stream.length) return makeFailure(i, 'EOF')
+Partser.eof = Parser((input, i) => {
+  if (i < input.length) return makeFailure(i, 'EOF')
   return makeSuccess(i, null)
 })
 
 Partser.test = (predicate) => {
   assertFunction('test', predicate)
 
-  return Parser((stream, i, env) => {
-    const char = stream.charAt(i)
-    if (i < stream.length && predicate(char, env)) {
+  return Parser((input, i, env) => {
+    const char = input.charAt(i)
+    if (i < input.length && predicate(char, env)) {
       return makeSuccess(i + 1, char)
     } else {
       return makeFailure(i, 'a character matching ' + predicate)
@@ -352,14 +352,14 @@ Partser.test = (predicate) => {
   })
 }
 
-Partser.index = Parser((stream, i) => makeSuccess(i, i))
+Partser.index = Parser((input, i) => makeSuccess(i, i))
 
-Partser.lcIndex = Parser((stream, i) => {
+Partser.lcIndex = Parser((input, i) => {
   // Like the usual `index` function, but emitting an object that contains line
   // and column indices in addition to the character-based one.  Less
   // performant, but often convenient.
 
-  const lines = stream.slice(0, i).split('\n')
+  const lines = input.slice(0, i).split('\n')
 
   // Note:  The character offset is 0-based; lines and columns are 1-based.
   const currentLine = lines.length
@@ -390,10 +390,10 @@ Partser.replace = (original, replacement) => {
 Partser.chain = (parser, lookup) => {
   assertParser('chain', parser)
   assertFunction('chain', lookup)
-  return Parser((stream, i, env) => {
-    const result = parser._(stream, i, env)
+  return Parser((input, i, env) => {
+    const result = parser._(input, i, env)
     if (!result.status) return result
     const nextParser = lookup(result.value, env)
-    return mergeOver(nextParser._(stream, result.index, env), result)
+    return mergeOver(nextParser._(input, result.index, env), result)
   })
 }
