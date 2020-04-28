@@ -126,13 +126,13 @@ tape('from: can be used to implement a recursive parser', (t) => {
 tape('p.from gives useful error if resolved value is not function', (t) => {
   t.throws(() => {
     p.from(() => { return null })('asd')
-  }, /Partser.from: Non-parser value \[object Null\] from \(\) => \{ return null \}/)
+  }, /Partser.from\(\(\) => \{ return null \}\): Not a parser: \[object Null\]/)
 
   t.throws(() => {
     const lookupFunction = () => { return null }
     lookupFunction.toString = () => 'custom toString'
     p.from(lookupFunction)('asd')
-  }, /Partser.from: Non-parser value \[object Null\] from custom toString/)
+  }, /Partser.from\(custom toString\): Not a parser: \[object Null\]/)
 })
 
 tape('custom parsers can take whatever instead of strings', (t) => {

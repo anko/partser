@@ -155,13 +155,10 @@ Partser.from = (lookup) => {
   assertFunction('from', lookup)
   return Parser((stream, i, env) => {
     const foundParser = lookup(env)
-    // Deliberately using isParser directly instead of calling assertParser, so
-    // we can throw a more descriptive error if the value is bad.
-    if (isParser(foundParser)) {
-      return foundParser._(stream, i, env)
-    } else {
-      throw TypeError(`Partser.from: Non-parser value ${toString(foundParser)} from ${lookup}`)
-    }
+    // To aid in debugging, if this isn't a parser, then also mention the
+    // lookup function in the assert message.
+    assert('parser', isParser)(`from(${lookup})`, foundParser)
+    return foundParser._(stream, i, env)
   })
 }
 

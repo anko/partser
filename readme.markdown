@@ -293,6 +293,13 @@ Return:  Parser that works according to the logic specified in the given
 `implementation`.  The `implementation` should have the [the same API as the
 built-in parsers do](#calling-a-parser).
 
+The reason you should use this function to wrap your custom parser (rather than
+just using your function as a parser as-is) is that doing so adds it to the
+internal store of *functions that are known to represent parsers*.  This store
+is accessed by [p.isParser](#pisparservalue), and is used to catch subtle
+errors, such as accidentally returning a non-parser function from your
+[`p.from`](#pfromdecideparserfunction) callback.
+
 <!-- !test in custom -->
 
     const parser = p.custom((input, index, env) => {
