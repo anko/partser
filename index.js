@@ -98,15 +98,15 @@ const formatExpected = (expected) => {
 
 const formatGot = (input, error) => {
   const i = error.index
-  const locationDescription = ` at character ${i}`
+  const where = ` at character ${i}`
 
-  if (i === input.length) return `${locationDescription}, got end of input`
+  if (i === input.length) return `${where}, got end of input`
   else {
     const amountOfContext = 10
     const remainingCharsInInput = input.length - i
     let actualValue = input.slice(i, i + amountOfContext)
     if (remainingCharsInInput > i + amountOfContext) actualValue += '...'
-    return `${locationDescription}, got '${actualValue}'`
+    return `${where}, got '${actualValue}'`
   }
 }
 
