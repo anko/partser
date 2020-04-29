@@ -178,13 +178,6 @@ Partser.seq = (...parsers) => {
   })
 }
 
-const seqMap = (...args) => {
-  const mapper = args.pop()
-  return Partser.map(
-    Partser.seq(...args),
-    (results) => mapper(...results))
-}
-
 Partser.custom = (parsingFunction) => {
   assertFunction('custom', parsingFunction)
   return Parser(parsingFunction)
@@ -253,6 +246,13 @@ Partser.map = (parser, fn) => {
     if (!result.status) return result
     return mergeOver(makeSuccess(result.index, fn(result.value, env)), result)
   })
+}
+
+const seqMap = (...args) => {
+  const mapper = args.pop()
+  return Partser.map(
+    Partser.seq(...args),
+    (results) => mapper(...results))
 }
 
 Partser.mark = (parser) => {
