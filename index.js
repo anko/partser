@@ -143,6 +143,7 @@ Partser.except = (allowed, forbidden) => {
 // deriveEnv is a user-provided function that creates a new environment based
 // on the existing one.
 Partser.subEnv = (baseParser, deriveEnv) => {
+  assertParser('subEnv', baseParser)
   assertFunction('subEnv', deriveEnv)
   return Parser((input, i, env) => {
     const newEnv = deriveEnv(env)
@@ -239,6 +240,7 @@ Partser.times = (parser, min, max) => {
 }
 
 Partser.map = (parser, fn) => {
+  assertParser('map', parser)
   assertFunction('map', fn)
 
   return Parser((input, i, env) => {
