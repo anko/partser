@@ -399,6 +399,35 @@ tape('desc', (t) => {
     value: 'A',
     index: 1
   }, 'passes env')
+
+  // Presumably rare edge case, but real subtle if it happens: If a custom
+  // parser uses its result value in some way, we want to ensure that `desc`
+  // doesn't modify it.
+  let returnedResult
+  const customParser = p.custom((input, index, env) => {
+    const result = {
+      status: false,
+      index,
+      value: ['ORIGINAL']
+    }
+    // Save a reference to the result
+    returnedResult = result
+    return result
+  })
+  const wrappedCustom = p.desc(customParser, 'REPLACED')
+  const replacedReturnedResult = wrappedCustom()
+  t.deepEquals(replacedReturnedResult, {
+    status: false,
+    index: 0,
+    value: ['REPLACED']
+  })
+  // Check that the original returned result object wasn't modified; the
+  // replacement should be a copy.
+  t.deepEquals(returnedResult, {
+    status: false,
+    index: 0,
+    value: ['ORIGINAL']
+  })
   t.end()
 })
 

@@ -276,9 +276,15 @@ Partser.desc = (parser, expected) => {
   assertString('desc', expected)
 
   return Parser((input, i, env) => {
-    const reply = parser._(input, i, env)
-    if (!reply.status) reply.value = [expected]
-    return reply
+    let result = parser._(input, i, env)
+    if (!result.status) {
+      // Make a copy.  Simply assigning a new value might cause subtle bugs if
+      // a user's custom parser saves their result value somewhere before
+      // returning it.
+      result = Object.assign({}, result)
+      result.value = [expected]
+    }
+    return result
   })
 }
 
