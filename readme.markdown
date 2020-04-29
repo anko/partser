@@ -718,6 +718,42 @@ formatter, so you can have nice things like coloured output, and more context.
    > { status: true, index: 3, value: [ 'Hi', '!' ] }
    > ```
 
+ - It is frequently useful to create your own helper functions, to make your
+   implementation neater.
+
+   <!-- !test in helpers -->
+
+   ```js
+   const node = (name, parser) => {
+     return p.map(
+       p.lcMark(parser),
+       (result) => Object.assign({ name }, result))
+   }
+
+   const word = node('word', p.regex(/\w+/))
+   const number = node('number', p.regex(/\d+/))
+
+   console.log(word('Hi').value)
+   console.log(number('42').value)
+   ```
+
+   <!-- !test out helpers -->
+
+   > ```
+   > {
+   >   name: 'word',
+   >   start: { offset: 0, line: 1, column: 1 },
+   >   value: 'Hi',
+   >   end: { offset: 2, line: 1, column: 3 }
+   > }
+   > {
+   >   name: 'number',
+   >   start: { offset: 0, line: 1, column: 1 },
+   >   value: '42',
+   >   end: { offset: 2, line: 1, column: 3 }
+   > }
+   > ```
+
 ## Limitations
 
 [LL](https://en.wikipedia.org/wiki/LL_parser)(∞) parsers (like this library
