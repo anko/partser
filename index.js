@@ -246,7 +246,7 @@ Partser.map = (parser, fn) => {
   return Parser((input, i, env) => {
     const result = parser._(input, i, env)
     if (!result.status) return result
-    return mergeOver(makeSuccess(result.index, fn(result.value, env)), result)
+    return makeSuccess(result.index, fn(result.value, env))
   })
 }
 
@@ -402,6 +402,6 @@ Partser.chain = (parser, lookup) => {
     const result = parser._(input, i, env)
     if (!result.status) return result
     const nextParser = lookup(result.value, env)
-    return mergeOver(nextParser._(input, result.index, env), result)
+    return nextParser._(input, result.index, env)
   })
 }
