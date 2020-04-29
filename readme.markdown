@@ -731,12 +731,12 @@ creates) have these limitations:
 
 ## Related libraries
 
- - [Parsimmon](https://github.com/jneen/parsimmon) is the project this library
-   was forked from.  It can recognise the same category of grammars, and has a
-   more abstract API, with a language construction DSL and a call-chaining
-   syntax that some prefer.  It doesn't support user-defined nested
-   environments, and has relatively limited features for modifying parsing
-   logic during parsing.
+ - [Parsimmon](https://github.com/jneen/parsimmon) is where this library was
+   forked from.  It can recognise the same category of grammars, but can
+   additionally handle binary data.  It has a more abstract API, with a
+   language construction DSL and a call-chaining syntax that some prefer.  It
+   doesn't support user-defined nested environments, and has relatively limited
+   features for modifying parsing logic during parsing.
  - [Nearley](https://github.com/kach/nearley) is much more performant, can
    parse left-recursive grammars, and even handles ambiguity!  However, it is
    much more rigid in design: it does not have parse environments, and cannot
