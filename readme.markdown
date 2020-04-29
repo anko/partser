@@ -714,9 +714,9 @@ formatter, so you can have nice things like coloured output, and more context.
 
    <!-- !test out using from to load later -->
 
-   ```
-   { status: true, index: 3, value: [ 'Hi', '!' ] }
-   ```
+   > ```
+   > { status: true, index: 3, value: [ 'Hi', '!' ] }
+   > ```
 
 ## Limitations
 
