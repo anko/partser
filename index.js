@@ -93,12 +93,12 @@ const mergeOver = (() => {
 
 const formatExpected = (expected) => {
   if (expected.length === 1) return expected[0]
-  else return 'one of ' + expected.join(', ')
+  else return `one of ${expected.join(', ')}`
 }
 
 const formatGot = (input, error) => {
   const i = error.index
-  const where = ` at character ${i}`
+  const where = `at character ${i}`
 
   if (i === input.length) return `${where}, got end of input`
   else {
@@ -111,7 +111,7 @@ const formatGot = (input, error) => {
 }
 
 Partser.formatError = (input, error) =>
-  'expected ' + formatExpected(error.value) + formatGot(input, error)
+  `expected ${formatExpected(error.value)} ${formatGot(input, error)}`
 
 Partser.except = (allowed, forbidden) => {
   assertParser('except', allowed)
@@ -355,7 +355,7 @@ Partser.test = (predicate) => {
     if (i < input.length && predicate(char, env)) {
       return makeSuccess(i + 1, char)
     } else {
-      return makeFailure(i, 'a character matching ' + predicate)
+      return makeFailure(i, `a character matching ${predicate}`)
     }
   })
 }
