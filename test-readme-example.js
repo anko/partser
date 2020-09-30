@@ -16,18 +16,7 @@ while (code === undefined) {
   }
 }
 
-// Check it through standardjs
-const lint = standard.lintTextSync(code, { globals: ['p'] })
-if (lint.errorCount > 0 || lint.warningCount > 0) {
-  for (const result of lint.results) {
-    for (const m of result.messages) {
-      console.error(`standard.js complaint at line ${m.line}, column ${m.column}:`)
-      console.error(`  ${m.message}`)
-      console.error(`  (rule '${m.ruleId}')`)
-    }
-  }
-  process.exit(0xBAD)
-}
+const codeBeforeTransformations = code
 
 // Replace requires for the npm-published name with local file
 code = code
@@ -49,3 +38,16 @@ Object.assign(console, new console.Console({
 // Need to eval rather than new Function() because the code needs access to
 // current scope, to use require etc.
 eval(code) // eslint-disable-line no-eval
+
+// Check it through standardjs
+const lint = standard.lintTextSync(codeBeforeTransformations, { globals: ['p'] })
+if (lint.errorCount > 0 || lint.warningCount > 0) {
+  for (const result of lint.results) {
+    for (const m of result.messages) {
+      console.error(`standard.js complaint at line ${m.line}, column ${m.column}:`)
+      console.error(`  ${m.message}`)
+      console.error(`  (rule '${m.ruleId}')`)
+    }
+  }
+  process.exit(0xBAD)
+}
