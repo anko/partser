@@ -1,6 +1,9 @@
 'use strict'
+
 const p = require('./index')
 const tape = require('tape')
+const { spawnSync } = require('child_process')
+const colour = require('ansi-colors')
 
 // Helpers for checking whether a parse succeeded as expected.  Nice as
 // adapters, in case the output format changes.
@@ -28,7 +31,7 @@ tape('isParser', (t) => {
   t.end()
 })
 tape('Object.keys is unpolluted', (t) => {
-  t.deepEquals(Object.keys(p.string('a')), ['_'])
+  t.deepEquals(Object.keys(p.string('a')), ['behaviour', 'displayName', '_'])
   t.end()
 })
 
@@ -630,9 +633,10 @@ tape('clone', (t) => {
   let a = p.string('a')
 
   // Cloning an object creates a parser which has a separate identity but the
-  // same parsing behaviour.
+  // same parsing behaviour and display name.
   t.equal(a, a)
   t.notEqual(a, p.clone(a))
+  t.equal(a.displayName, p.clone(a).displayName)
   parseOk(t, a, 'a', 'a')
   parseOk(t, p.clone(a), 'a', 'a')
   // This means you can modify the p.clone, e.g. by replacing it's logic, without
@@ -695,5 +699,147 @@ tape('formatError', (t) => {
     t.equals(p.formatError(source, error),
       "expected '!' at character 0, got 'abcdefghij...'")
   }
+  t.end()
+})
+
+// To test debug functionality, we have to capture what's logged to the
+// console.  For this, we have to spawn separate processes to run each test,
+// and capture its stdout.
+
+const run = (script, env) => {
+  const scriptWithImport = `const p = require('.');\n${script}`
+  return spawnSync('node',
+    { input: scriptWithImport, encoding: 'utf-8', env })
+}
+
+tape('debug', (t) => {
+  // First a basic test with colour
+  {
+    const { stdout } = run('p.debug(p.string(\'a\'))(\'a\')', { FORCE_COLOR: 1 })
+    t.equals(stdout, [
+      `${colour.inverse('a')} 1,1 ${colour.blue('string("a")')} ?`,
+      `${colour.bgGreen('a')} 1,1 ${colour.blue('string("a")')} ${colour.green('OKAY')} ${colour.yellow('"a"')} (len 1)`,
+      ''
+    ].join('\n'))
+  }
+  // Testing highlighting of EOF (appears as highlighted blank space after the input
+  {
+    const { stdout } = run('p.debug(p.times(p.string(\'a\'), 0, Infinity))(\'a\')', { FORCE_COLOR: 1 })
+    t.equals(stdout, [
+      `${colour.inverse('a')} 1,1 ${colour.blue('times(0,Infinity)')} ?`,
+      `${colour.inverse('a')} ${colour.dim('· ')}1,1 ${colour.blue('string("a")')} ?`,
+      `${colour.bgGreen('a')} ${colour.dim('· ')}1,1 ${colour.blue('string("a")')} ${colour.green('OKAY')} ${colour.yellow('"a"')} (len 1)`,
+      `${colour.dim('a')}${colour.inverse(' ')}${colour.dim('· ')}1,2 ${colour.blue('string("a")')} ?`,
+      `${colour.dim('a')}${colour.bgRed(' ')}${colour.dim('· ')}1,2 ${colour.blue('string("a")')} FAIL ["'a'"]`,
+      `${colour.bgGreen('a')} 1,1 ${colour.blue('times(0,Infinity)')} ${colour.green('OKAY')} ${colour.yellow('"a"')} (len 1)`,
+      ''
+    ].join('\n'))
+  }
+  // Ideally we could somehow test with all the colour codes every time, but
+  // it's really tedious to write down and maintain, and obscures the intended
+  // format otherwise.
+  {
+    const { stdout } = run('p.debug(p.times(p.alt(p.string(\'a\'), p.string(\'b\')), 3))(\'abc\')')
+    t.equals(stdout, [
+      'abc 1,1 times(3,3) ?',
+      'abc · 1,1 alt(*2) ?',
+      'abc · · 1,1 string("a") ?',
+      'abc · · 1,1 string("a") OKAY "a" (len 1)',
+      'abc · 1,1 alt(*2) OKAY "a" (len 1)',
+      'abc · 1,2 alt(*2) ?',
+      'abc · · 1,2 string("a") ?',
+      'abc · · 1,2 string("a") FAIL ["\'a\'"]',
+      'abc · · 1,2 string("b") ?',
+      'abc · · 1,2 string("b") OKAY "b" (len 1)',
+      'abc · 1,2 alt(*2) OKAY "b" (len 1)',
+      'abc · 1,3 alt(*2) ?',
+      'abc · · 1,3 string("a") ?',
+      'abc · · 1,3 string("a") FAIL ["\'a\'"]',
+      'abc · · 1,3 string("b") ?',
+      'abc · · 1,3 string("b") FAIL ["\'b\'"]',
+      'abc · 1,3 alt(*2) FAIL ["\'b\'","\'a\'"]',
+      'abc 1,1 times(3,3) FAIL ["\'b\'","\'a\'"]',
+      ''
+    ].join('\n'))
+  }
+  // Test appropriate context trimming for long inputs
+  {
+    const { stdout } = run('p.debug(p.seq(p.regex(/\\w+/), p.string(\'!\')))(\'abcdefghijklmnop!\')')
+    t.equals(stdout, [
+      'abcdefghij 1,1 seq(*2) ?',
+      'abcdefghij · 1,1 regex(/\\w+/, 0) ?',
+      'abcdefghij · 1,1 regex(/\\w+/, 0) OKAY "abcdefghijklmnop" (len 16)',
+      'hijklmnop! · 1,17 string("!") ?',
+      'hijklmnop! · 1,17 string("!") OKAY "!" (len 1)',
+      'abcdefghij 1,1 seq(*2) OKAY "abcdefghijklmnop!" (len 17)',
+      ''
+    ].join('\n'))
+  }
+  // Test clarifying replacements of control codes and whitespace characters
+  {
+    const { stdout, stderr } = run('p.debug(p.string("a"))(" \\n\\t\\0")')
+    t.equals(stderr, '')
+    t.equals(stdout, [
+      '␣⏎↹␀ 1,1 string("a") ?',
+      '␣⏎↹␀ 1,1 string("a") FAIL ["\'a\'"]',
+      ''
+    ].join('\n'))
+  }
+  t.end()
+})
+
+tape('debug handler', (t) => {
+  const argsToArray = (x) => Array.prototype.slice.call(x)
+
+  // Test custom debug handler arguments
+  let enterArgs, exitArgs
+  const handler = {
+    enter: function () { enterArgs = argsToArray(arguments) },
+    exit: function () { exitArgs = argsToArray(arguments) }
+  }
+  const parser = p.string('a')
+  p.debug(parser, handler)('a', { envValue: 42 })
+  t.deepEquals(enterArgs,
+    [parser, 'a', 0, { envValue: 42 }])
+  t.deepEquals(exitArgs,
+    [parser, 'a', 0, { envValue: 42 },
+      { status: true, index: 1, value: 'a' }])
+  t.end()
+})
+
+tape('debug.makeHandler', (t) => {
+  // Test that custom handlers can skip log entries and add extra info.  In
+  // this case, we skip logs for the string parser, and print 2 lines of extra
+  // data.
+  //
+  // Also, force 5 characters of context, padded with whitespace because the
+  // input is shorter than 5.
+  const { stdout, stderr } = run(`
+    p.debug(
+      p.times(p.string('a'), 0, Infinity),
+      p.debug.makeHandler({
+        context: 5,
+        padIfShort: true,
+        enter: (parser, input, offset, env) => {
+          if (parser.displayName.startsWith('string')) { return false }
+          return 'extra\\ndata'
+        },
+        exit: (parser, input, offset, env, result) => {
+          if (parser.displayName.startsWith('string')) { return false }
+          return 'extra\\ndata'
+        }
+      })
+    )('aa')
+  `)
+  t.equals(stderr, '')
+  t.equals(stdout, [
+    'aa    1,1 times(0,Infinity) ?',
+    'aa    extra',
+    'aa    data',
+    'aa    1,1 times(0,Infinity) OKAY "aa" (len 2)',
+    'aa    extra',
+    'aa    data',
+    ''
+  ].join('\n'))
   t.end()
 })

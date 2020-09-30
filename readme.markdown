@@ -290,28 +290,54 @@ character ranges.
 #### `p.custom(implementation:Function)`
 
 Return:  Parser that works according to the logic specified in the given
-`implementation`.  The `implementation` should have the [the same API as the
-built-in parsers do](#calling-a-parser).
+`implementation`.  The `implementation` should have the API demonstrated in the
+below example.
 
-The reason you should use this function to wrap your custom parser (rather than
-just using your function as a parser as-is) is that doing so adds it to the
-internal store of *functions that are known to represent parsers*.  This store
-is accessed by [p.isParser](#pisparservalue), and is used to catch subtle
-errors, such as accidentally returning a non-parser function from your
-[`p.from`](#pfromdecideparserfunction) callback.
+This function wraps your custom parser functionality such that it works with
+all other parsers and combinator functions.
 
 <!-- !test in custom -->
 
-    const parser = p.custom((input, index, env) => {
-      // Put whatever logic you want here
-      return { status: true, index, value: 42 }
+    const otherParser = p.string('x')
+
+    const parser = p.custom((input, index, env, debugHandler) => {
+      // Put whatever logic you want here.
+
+      // You don't have to call any methods in `debugHandler`.  It's done
+      // automatically for you.  You should however pass it on when calling
+      // other parsers, if you want `p.debug` to be able to display them.
+
+      if (input[index] === 'a') {
+        // If you want to call another parser, call its `_` property.  This
+        // makes the parser succeed if it matches, even if it didn't consume
+        // all of the input.
+        const xResult = otherParser._(input, index + 1, env, debugHandler)
+        if (xResult.status === false) return xResult
+
+        return {
+          status: true,
+          index: xResult.index,
+          value: { word: 'a' + xResult.value, greeting: env.hello }
+        }
+      } else {
+        return {
+          status: false,
+          index,
+          value: ['the letter a']
+        }
+      }
     })
-    console.log(parser(''))
+
+    console.log(parser('b'))
+    console.log(parser('a'))
+    console.log(parser('ax', { hello: 'hi' }))
 
 <!-- !test out custom -->
 
 > ```
-> { status: true, index: 0, value: 42 }
+> { status: false, index: 0, value: [ 'the letter a' ] }
+> { status: false, index: 1, value: [ "'x'" ] }
+> { status: true, index: 2, value: { word: 'ax', greeting: 'hi' } }
 > ```
 
 ### Parser combinators
@@ -618,6 +644,131 @@ about this.
 > ```
 
 ### Helper functions
+
+#### `p.debug(parser [, debugHandler:Object])`
+
+Returns a parser that works identically to the given `parser`, but with debug
+instrumentation.
+
+If a `debugHandler` is passed, its properties are called as functions during
+parsing:
+
+ - `debugHandler.enter` is called before a parser executes with arguments
+   `parser:Parser`, `input:String`, `index:Number`, `env: Any`.
+ - `debugHandler.exit` is called once a parser returns, with the same arguments
+   plus `result:Object` in [the same format as
+   normally](https://github.com/anko/partser#calling-a-parser).
+
+Without a custom debug handler given, the default is used, which prints a
+coloured visualisation of the parse:
+
+<!-- !test in debug -->
+
+```
+const parser = p.times(
+  p.alt(p.string('ba'), p.string('na')),
+  0, 3)
+const parserWithDebug = p.debug(parser)
+const result = parserWithDebug('banana')
+console.log(result)
+```
+
+With colour support:
+
+> ![debug output with colours](https://user-images.githubusercontent.com/5231746/94251806-5ef0d080-ff23-11ea-8e3f-f59aa74dc51c.png)
+
+Without colour:
+
+<!-- !test out debug -->
+
+> ```
+> banana 1,1 times(0,3) ?
+> banana · 1,1 alt(*2) ?
+> banana · · 1,1 string("ba") ?
+> banana · · 1,1 string("ba") OKAY "ba" (len 2)
+> banana · 1,1 alt(*2) OKAY "ba" (len 2)
+> banana · 1,3 alt(*2) ?
+> banana · · 1,3 string("ba") ?
+> banana · · 1,3 string("ba") FAIL ["'ba'"]
+> banana · · 1,3 string("na") ?
+> banana · · 1,3 string("na") OKAY "na" (len 2)
+> banana · 1,3 alt(*2) OKAY "na" (len 2)
+> banana · 1,5 alt(*2) ?
+> banana · · 1,5 string("ba") ?
+> banana · · 1,5 string("ba") FAIL ["'ba'"]
+> banana · · 1,5 string("na") ?
+> banana · · 1,5 string("na") OKAY "na" (len 2)
+> banana · 1,5 alt(*2) OKAY "na" (len 2)
+> banana 1,1 times(0,3) OKAY "banana" (len 6)
+> { status: true, index: 6, value: [ 'ba', 'na', 'na' ] }
+> ```
+
+:warning: The output of the default debug handler is intended for human
+interpretation.  It may change in the future.  If you want to consume debug
+information programmatically, create your own debug handler.
+
+#### `p.debug.makeHandler([options:Object])`
+
+Creates a debug handler with `enter` and `exit` Function properties, suitable
+for passing to `p.debug` as the `debugHandler` argument.  It works just like
+the default, but with configurable `options`:
+
+ - `context:Number`: Number of chars of input to show at the left for context
+   (default: `10`)
+
+ - `padIfShort:Boolean`: Set this to `true` to pad the context strip to the
+   same length if the input string doesn't fill it completely (default:
+   `false`)
+
+ - `enter:Function`: Is passed the same parameters as the `enter` property of
+   the debug handler.
+
+   If it returns `false`, this log entry is skipped.
+
+   If it returns some truthy value, that value is appended to the regular log
+   entry as extra data.  Any extra data will be indented appropriately and
+   placed after the usual debug print.
+
+   (default: `undefined`; no extra data shown)
+
+ - `exit:Function`: As above, but for `exit`.  (default: `undefined`; no extra
+   data shown)
+
+Use-cases for this function include displaying the parse environment in a
+domain-appropriate way, and filtering which log entries are shown.
+
+<!-- !test in debug with extra info -->
+
+```js
+const env = { wasCalled: false }
+const parser = p.from((env) => {
+  env.wasCalled = true
+  return p.string('a')
+})
+
+const debugHandler = p.debug.makeHandler({
+  context: 10,
+  enter: (name, input, index, env) => `→ ${env.wasCalled}`,
+  exit: (name, input, index, env, result) => `← ${env.wasCalled}`,
+  padIfShort: true
+})
+const debugParser = p.debug(parser, debugHandler)
+console.log(debugParser('a', env))
+```
+
+<!-- !test out debug with extra info -->
+
+```
+a          1,1 from ?
+a          → false
+a          · 1,1 string("a") ?
+a          · → true
+a          · 1,1 string("a") OKAY "a" (len 1)
+a          · ← true
+a          1,1 from OKAY "a" (len 1)
+a          ← true
+{ status: true, index: 1, value: 'a' }
+```
 
 #### `p.replace(targetParser, sourceParser)`
 

@@ -25,7 +25,11 @@
     "tape": "^5.0.1",
     "txm": "^7.4.1"
   },
-  "dependencies": {},
+  "dependencies": {
+    "ansi-colors": "^4.1.1",
+    "slice-with-context": "^1.0.1",
+    "supports-color": "^7.2.0"
+  },
   "scripts": {
     "test": "npm run-script test-code-with-coverage && npm run-script test-docs && standard",
     "test-code": "node test.js",
