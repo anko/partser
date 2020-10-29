@@ -36,7 +36,7 @@ var stringContents = p.map(
 // A string is a quote, string contents, then another quote.
 // We'll pick out just the content part, and return that.
 var stringParser = p.map(
-  p.seq(quote, stringContents, quote),
+  p.seq([quote, stringContents, quote]),
   ([openingQuote, contents, closingQuote]) => contents)
 
 // Now we can pass an environment object when calling the parser, to specify
@@ -159,9 +159,10 @@ representing the offset into the input that has been consumed so far.
 
 <!-- !test in index -->
 
-    const parser = p.seq(
+    const parser = p.seq([
       p.string('hi'),
-      p.index)
+      p.index
+    ])
     console.log(parser('hi'))
 
 <!-- !test out index -->
@@ -181,9 +182,10 @@ that if you only need the character offset.
 
 <!-- !test in lcIndex -->
 
-    const parser = p.seq(
+    const parser = p.seq([
       p.string('hi'),
-      p.lcIndex)
+      p.lcIndex
+    ])
     console.log(parser('hi'))
 
 <!-- !test out lcIndex -->
@@ -345,18 +347,17 @@ all other parsers and combinator functions.
 These functions operate on parsers, acting as "wrappers" around them to modify
 how they work.
 
-#### `p.seq([parser, ...])`
-
-Takes any number of arguments.
+#### `p.seq(parsers [, chainEnv])`
 
 Return:  Parser that matches all of the given `parser`s in order, and returns
 an Array of their results.
 
 <!-- !test in seq -->
 
-    const parser = p.seq(
+    const parser = p.seq([
       p.string('a'),
-      p.regex(/[xyz]/))
+      p.regex(/[xyz]/)
+    ])
 
     console.log(parser('ax'))
 
@@ -365,6 +366,12 @@ an Array of their results.
 > ```
 > { status: true, index: 2, value: [ 'a', 'x' ] }
 > ```
+
+If `chainEnv` is given, it is called as a function, with the value of the
+previous successful parser in the sequence, and its return value is passed as
+the environment variable to the next parser.  This lets you pass an environment
+object forward through a sequence of parsers if you wish.  (If `chainEnv` is
+not given, the same environment is passed to all parsers.)
 
 #### `p.alt([parser, ...])`
 
@@ -441,7 +448,7 @@ Useful for making complex parsers show clearer error messages.
 <!-- !test in desc -->
 
     const floatParser = p.map(
-      p.seq(p.regex(/[0-9]+/), p.string('.'), p.regex(/[0-9]+/)),
+      p.seq([p.regex(/[0-9]+/), p.string('.'), p.regex(/[0-9]+/)]),
       ([left, dot, right]) => {
         return { left: Number(left), right: Number(right) }
       })
@@ -569,10 +576,11 @@ is created by calling `derive(env)` where `env` is the current environment.
     const dotParser = p.map(p.string('.'), (value, env) => env)
     const listParser = p.subEnv(
       p.map(
-        p.seq(
+        p.seq([
           p.string('('),
           p.times(expression, 0, Infinity),
-          p.string(')')),
+          p.string(')')
+        ]),
         ([leftParen, value, rightParen]) => value),
       (env) => ({ level: env.level + 1 }))
 
@@ -856,7 +864,7 @@ formatter, so you can have nice things like coloured output, and more context.
    //
    //     ReferenceError: Cannot access 'word' before initialization
    //
-   const exclamation = p.seq(p.from(() => word), p.string('!'))
+   const exclamation = p.seq([p.from(() => word), p.string('!')])
 
    const word = p.regex(/\w+/)
 

@@ -88,6 +88,37 @@ tape('lcIndex', (t) => {
   parseOk(t, p.lcIndex, '', { line: 1, column: 1, offset: 0 })
   t.end()
 })
+tape('seq', (t) => {
+  parseOk(t, p.seq([p.string('a'), p.string('b')]),
+    'ab', ['a', 'b'])
+  t.end()
+})
+tape('seq (env chain)', (t) => {
+  const parser = p.seq([
+    p.map(p.string('a'), (value, env) => {
+      return { value, env: env + 1 }
+    }),
+    p.map(p.string('b'), (value, env) => {
+      return { value, env: env + 1 }
+    }),
+    p.map(p.string('c'), (value, env) => {
+      return { value, env: env + 1 }
+    })
+  ], ({ value, env }) => env)
+  t.deepEquals(
+    parser('abc', 0),
+    {
+      status: true,
+      index: 3,
+      value: [
+        { value: 'a', env: 1 },
+        { value: 'b', env: 2 },
+        { value: 'c', env: 3 }
+      ]
+    }, 'user-determined env chaining')
+  t.end()
+})
+
 tape('custom `p.any` parser', (t) => {
   const customAny = p.custom((stream, i) => {
     const remainingStream = stream.slice(i)
@@ -99,8 +130,8 @@ tape('custom `p.any` parser', (t) => {
   })
   parseOk(t, customAny, 'a', 'a')
   parseOk(t, customAny, 'b', 'b')
-  parseOk(t, p.seq(p.string('x'), customAny), 'xa', ['x', 'a'])
-  parseFail(t, p.seq(p.string('x'), customAny), 'x', 1, ['any character'])
+  parseOk(t, p.seq([p.string('x'), customAny]), 'xa', ['x', 'a'])
+  parseFail(t, p.seq([p.string('x'), customAny]), 'x', 1, ['any character'])
   parseFail(t, customAny, '', 0, ['any character'])
   parseOk(t, p.map(customAny, x => x.toUpperCase()),
     'a', 'A')
@@ -111,7 +142,7 @@ tape('custom parser that just calls `p.any`', (t) => {
   const customAny = p.custom((...args) => p.any._(...args))
   parseOk(t, customAny, 'a', 'a')
   parseOk(t, customAny, 'b', 'b')
-  parseFail(t, p.seq(p.string('x'), customAny), 'x', 1, ['any character'])
+  parseFail(t, p.seq([p.string('x'), customAny]), 'x', 1, ['any character'])
   parseFail(t, customAny, '', 0, ['any character'])
   parseOk(t, p.map(customAny, x => x.toUpperCase()),
     'a', 'A')
@@ -121,10 +152,11 @@ tape('custom parser that just calls `p.any`', (t) => {
 tape('from: can be used to implement a recursive parser', (t) => {
   const list = p.from(() =>
     p.map(
-      p.seq(
+      p.seq([
         p.string('('),
         p.times(p.alt(list, p.string('x')), 0, Infinity),
-        p.string(')')),
+        p.string(')')
+      ]),
       ([before, mid, after]) => mid
     )
   )
@@ -156,7 +188,7 @@ tape('custom parsers can take whatever instead of strings', (t) => {
 
     const whitespace = p.regex(/\s*/)
     const lexeme = (parser) => {
-      return p.map(p.seq(parser, whitespace), ([x, _]) => x)
+      return p.map(p.seq([parser, whitespace]), ([x, _]) => x)
     }
 
     const numbers = p.map(
@@ -220,7 +252,7 @@ tape('except', (t) => {
 
 tape('seq', (t) => {
   const needsEnv = p.map(p.string('a'), (x, f) => f(x))
-  const withEnv = p.seq(p.any, needsEnv)
+  const withEnv = p.seq([p.any, needsEnv])
   t.deepEquals(withEnv('xa', x => x.toUpperCase()), {
     status: true,
     value: ['x', 'A'],
@@ -230,7 +262,7 @@ tape('seq', (t) => {
 })
 
 tape('seq with multiple empty parsers', (t) => {
-  const parser = p.seq(p.succeed('a'), p.succeed('b'))
+  const parser = p.seq([p.succeed('a'), p.succeed('b')])
   t.deepEquals(parser(''), {
     status: true,
     value: ['a', 'b'],
@@ -253,7 +285,7 @@ tape('subEnv can be modification of existing env', (t) => {
 tape('subEnv goes out of scope after', (t) => {
   const needsEnv = p.map(p.string('a'), (x, env) => env)
   const withEnv = p.subEnv(needsEnv, (x) => { return x + 'world' })
-  const sequence = p.seq(withEnv, p.map(p.string('x'), (x, env) => env))
+  const sequence = p.seq([withEnv, p.map(p.string('x'), (x, env) => env)])
   t.deepEquals(sequence('ax', 'Hello, '), {
     status: true,
     value: ['Hello, world', 'Hello, '],
@@ -269,7 +301,7 @@ tape('subEnv environments can be modified by map', (t) => {
     return env
   })
   const withEnv = p.subEnv(needsEnv, (x) => { return { previous: x } })
-  const sequence = p.seq(withEnv, p.map(p.string('x'), (x, env) => { return env }))
+  const sequence = p.seq([withEnv, p.map(p.string('x'), (x, env) => { return env })])
   t.deepEquals(sequence('ax', {}), {
     status: true,
     value: [
@@ -302,11 +334,12 @@ tape('from: can get parser from environment', (t) => {
   // property of the environment.  The first one is wrapped in a subEnv that
   // overrides the whatLetter parser to something else.  The override is only
   // in effect for the first one.
-  const sequence = p.seq(
+  const sequence = p.seq([
     p.subEnv(
       p.from(lookup('whatLetter')),
       (env) => ({ previous: env, whatLetter: p.string('!') })),
-    p.from(lookup('whatLetter')))
+    p.from(lookup('whatLetter'))
+  ])
 
   t.deepEquals(sequence('a', { whatLetter: p.string('a') }), {
     status: false,
@@ -481,7 +514,7 @@ tape('map', (t) => {
 
 tape('recursive parser with env stack corresponding to list nesting', (t) => {
   const between = (parser, before, after) =>
-    p.map(p.seq(before, parser, after), ([_, x]) => x)
+    p.map(p.seq([before, parser, after]), ([_, x]) => x)
 
   const atom = p.map(
     p.string('a'),
@@ -615,7 +648,7 @@ tape('replace with p.alt', (t) => {
     p.string('a'))
 
   const between = (parser, before, after) =>
-    p.map(p.seq(before, parser, after), ([_, x]) => x)
+    p.map(p.seq([before, parser, after]), ([_, x]) => x)
 
   const listOpener = p.string('(')
   const listTerminator = p.string(')')
@@ -667,7 +700,7 @@ tape('self-reference', (t) => {
   const list = p.fail('defined later')
   p.replace(list,
     p.times(p.map(
-      p.seq(parenOpen, list, parenClose),
+      p.seq([parenOpen, list, parenClose]),
       ([_, x]) => ({ v: x })),
     0, Infinity))
 
@@ -774,7 +807,7 @@ tape('debug', (t) => {
   }
   // Test appropriate context trimming for long inputs
   {
-    const { stdout } = run('p.debug(p.seq(p.regex(/\\w+/), p.string(\'!\')))(\'abcdefghijklmnop!\')')
+    const { stdout } = run('p.debug(p.seq([p.regex(/\\w+/), p.string(\'!\')]))(\'abcdefghijklmnop!\')')
     t.equals(stdout, [
       'abcdefghij 1,1 seq(*2) ?',
       'abcdefghij · 1,1 regex(/\\w+/, 0) ?',

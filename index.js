@@ -44,7 +44,7 @@ const assertFunction = assert('function', (x) => typeof x === 'function')
 const assertString = assert('string', (x) => typeof x === 'string')
 
 const skip = (...parsers) => {
-  return Partser.map(Partser.seq(...parsers), ([x]) => x) // first only
+  return Partser.map(Partser.seq(parsers), ([x]) => x) // first only
 }
 
 // Base parser constructor
@@ -181,17 +181,23 @@ Partser.from = (lookup) => {
   })
 }
 
-Partser.seq = (...parsers) => {
+Partser.seq = (parsers, chainEnv = undefined) => {
   parsers.forEach((x) => assertParser('seq', x))
   return Parser(`seq(*${parsers.length})`, (input, i, env, debugHandler) => {
     let result
     const accum = new Array(parsers.length)
 
     for (let j = 0; j < parsers.length; j += 1) {
-      result = mergeOver(parsers[j]._(input, i, env, debugHandler), result)
+      const nextResult = parsers[j]._(input, i, env, debugHandler)
+      result = mergeOver(nextResult, result)
       if (!result.status) return result
-      accum[j] = result.value
-      i = result.index
+      else {
+        if (chainEnv) {
+          env = chainEnv(result.value)
+        }
+        accum[j] = result.value
+        i = result.index
+      }
     }
 
     return mergeOver(makeSuccess(i, accum), result)
@@ -272,7 +278,7 @@ Partser.map = (parser, fn) => {
 const seqMap = (...args) => {
   const mapper = args.pop()
   return Partser.map(
-    Partser.seq(...args),
+    Partser.seq(args),
     (results) => mapper(...results))
 }
 
