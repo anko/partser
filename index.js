@@ -209,7 +209,7 @@ Partser.custom = (parsingFunction) => {
   return Parser('custom', parsingFunction)
 }
 
-Partser.alt = (...parsers) => {
+Partser.alt = (parsers) => {
   if (parsers.length === 0) throw TypeError('Partser.alt: Zero alternates')
   parsers.forEach((x) => assertParser('alt', x))
 

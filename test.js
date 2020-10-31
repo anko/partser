@@ -154,7 +154,7 @@ tape('from: can be used to implement a recursive parser', (t) => {
     p.map(
       p.seq([
         p.string('('),
-        p.times(p.alt(list, p.string('x')), 0, Infinity),
+        p.times(p.alt([list, p.string('x')]), 0, Infinity),
         p.string(')')
       ]),
       ([before, mid, after]) => mid
@@ -357,7 +357,7 @@ tape('from: can get parser from environment', (t) => {
 
 tape('alt', (t) => {
   const s = p.string
-  const abc = p.alt(s('a'), s('b'), s('c'))
+  const abc = p.alt([s('a'), s('b'), s('c')])
   parseOk(t, abc, 'a', 'a')
   parseOk(t, abc, 'b', 'b')
   parseOk(t, abc, 'c', 'c')
@@ -366,7 +366,7 @@ tape('alt', (t) => {
   const needsEnv1 = p.map(p.string('a'), (x, f) => f(x))
   const needsEnv2 = p.map(p.string('b'), (x, f) => f(x))
 
-  const withEnv = p.alt(needsEnv1, needsEnv2)
+  const withEnv = p.alt([needsEnv1, needsEnv2])
   t.deepEquals(withEnv('a', x => x.toUpperCase()), {
     status: true,
     value: 'A',
@@ -379,6 +379,7 @@ tape('alt', (t) => {
   }, 'passes env to subsequent')
 
   t.throws(() => { p.alt() }, TypeError)
+  t.throws(() => { p.alt([]) }, TypeError)
   t.end()
 })
 
@@ -520,7 +521,7 @@ tape('recursive parser with env stack corresponding to list nesting', (t) => {
     p.string('a'),
     (result, env) => env.value)
 
-  const expression = p.from(() => p.alt(list, atom))
+  const expression = p.from(() => p.alt([list, atom]))
 
   const listContent = p.times(expression, 0, Infinity)
   const list = p.from(() =>
@@ -606,7 +607,7 @@ tape('replace', (t) => {
   // with next, based on the result of the previous.
   a = p.string('a')
   b = p.string('b')
-  const acbd = p.chain(p.alt(a, b), (result) => {
+  const acbd = p.chain(p.alt([a, b]), (result) => {
     if (result.match(/a+/)) {
       return p.string('c')
     } else {
@@ -633,7 +634,7 @@ tape('replace with except', (t) => {
 tape('replace with p.alt', (t) => {
   const a = p.fail('defined later')
   const b = p.string('b')
-  const aOrB = p.alt(a, b)
+  const aOrB = p.alt([a, b])
   p.replace(a, p.map(p.string('c'), () => 'hi'))
   parseOk(t, aOrB, 'b', 'b')
   parseOk(t, aOrB, 'c', 'hi')
@@ -643,9 +644,9 @@ tape('replace with p.alt', (t) => {
 
 tape('replace with p.alt', (t) => {
   const listParserLater = p.fail('implemented later')
-  const expression = p.alt(
+  const expression = p.alt([
     listParserLater,
-    p.string('a'))
+    p.string('a')])
 
   const between = (parser, before, after) =>
     p.map(p.seq([before, parser, after]), ([_, x]) => x)
@@ -688,7 +689,7 @@ tape('clone', (t) => {
   // to the p.alt itself (since that's what `a` is replaced with and cause an
   // infinite loop when called.
   a = p.string('a')
-  p.replace(a, p.alt(p.clone(a), p.string('b')))
+  p.replace(a, p.alt([p.clone(a), p.string('b')]))
   parseOk(t, a, 'a', 'a')
   parseOk(t, a, 'b', 'b')
   t.end()
@@ -712,7 +713,7 @@ tape('self-reference', (t) => {
 
 tape('formatError', (t) => {
   {
-    const ab = p.alt(p.string('a'), p.string('b'))
+    const ab = p.alt([p.string('a'), p.string('b')])
     const source = 'x'
     const error = ab(source)
     t.equals(p.formatError(source, error),
@@ -780,7 +781,7 @@ tape('debug', (t) => {
   // it's really tedious to write down and maintain, and obscures the intended
   // format otherwise.
   {
-    const { stdout, stderr, error } = run('p.debug(p.times(p.alt(p.string(\'a\'), p.string(\'b\')), 3))(\'abc\')')
+    const { stdout, stderr, error } = run('p.debug(p.times(p.alt([p.string(\'a\'), p.string(\'b\')]), 3))(\'abc\')')
     t.equals(error, undefined)
     t.equals(stderr, '')
     t.equals(stdout, [

@@ -373,18 +373,16 @@ the environment variable to the next parser.  This lets you pass an environment
 object forward through a sequence of parsers if you wish.  (If `chainEnv` is
 not given, the same environment is passed to all parsers.)
 
-#### `p.alt([parser, ...])`
+#### `p.alt(parsers)`
 
-Takes any number of arguments.
-
-Returns a parser that matches any of the given `parser`s, and returns the
-result of the first one that matches.
+Returns a parser that matches any of the given `parsers`, and returns the
+result of the first one that matched.
 
 <!-- !test in alt -->
 
-    const parser = p.alt(
+    const parser = p.alt([
       p.string('a'),
-      p.string('b'))
+      p.string('b')])
 
     console.log(parser('b'))
 
@@ -572,7 +570,7 @@ is created by calling `derive(env)` where `env` is the current environment.
 
     const env = { level: 0 }
 
-    const expression = p.from(() => p.alt(listParser, dotParser))
+    const expression = p.from(() => p.alt([listParser, dotParser]))
     const dotParser = p.map(p.string('.'), (value, env) => env)
     const listParser = p.subEnv(
       p.map(
@@ -674,7 +672,7 @@ coloured visualisation of the parse:
 
 ```
 const parser = p.times(
-  p.alt(p.string('ba'), p.string('na')),
+  p.alt([p.string('ba'), p.string('na')]),
   0, 3)
 const parserWithDebug = p.debug(parser)
 const result = parserWithDebug('banana')
@@ -838,7 +836,7 @@ formatter, so you can have nice things like coloured output, and more context.
 
 <!-- !test in formatError -->
 
-    const parser = p.alt(p.string('a'), p.string('b'))
+    const parser = p.alt([p.string('a'), p.string('b')])
 
     const input = 'c'
     const result = parser(input)
