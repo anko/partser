@@ -223,7 +223,7 @@ Partser.alt = (parsers) => {
   })
 }
 
-Partser.times = (parser, min, max) => {
+Partser.times = (parser, min, max, chainEnv = undefined) => {
   if (max === undefined) max = min
 
   assertParser('times', parser)
@@ -245,6 +245,9 @@ Partser.times = (parser, min, max) => {
         previousResult = mergedResult
         index = result.index
         successes.push(result.value)
+        if (chainEnv) {
+          env = chainEnv(result.value)
+        }
       } else return mergedResult
     }
 
@@ -257,6 +260,9 @@ Partser.times = (parser, min, max) => {
         previousResult = mergedResult
         index = result.index
         successes.push(result.value)
+        if (chainEnv) {
+          env = chainEnv(result.value)
+        }
       } else break
     }
 

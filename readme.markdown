@@ -392,7 +392,7 @@ result of the first one that matched.
 > { status: true, index: 1, value: 'b' }
 > ```
 
-#### `p.times(parser, min:Number [, max:Number])`
+#### `p.times(parser, min:Number [, max:Number] [, chainEnv:Function])`
 
 Returns a parser that matches the given `parser` at least `min`, and at most
 `max` times, and returns an Array of the results.
@@ -414,6 +414,12 @@ If `max` is not given, `max = min`.
 > { status: true, index: 2, value: [ 'A', 'A' ] }
 > { status: true, index: 5, value: [ 'A', 'A', 'A', 'A', 'A' ] }
 > ```
+
+If `chainEnv` is given, it is called as a function, with the value of the
+previous successful parser in the sequence, and its return value is passed as
+the environment variable to the next parser.  This lets you pass an environment
+object forward through a sequence of parsers if you wish.  (If `chainEnv` is
+not given, the same environment is passed to all parsers.)
 
 #### `p.except(allowedParser, forbiddenParser)`
 

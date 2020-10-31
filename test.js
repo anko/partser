@@ -424,6 +424,27 @@ tape('times', (t) => {
   t.end()
 })
 
+tape('times (env chain)', (t) => {
+  const parser = p.times(
+    p.map(p.string('a'), (value, env) => { return { value, env: env + 1 } }),
+    1, Infinity,
+    ({ value, env }) => env)
+  t.deepEquals(
+    parser('aaaaa', 0),
+    {
+      status: true,
+      index: 5,
+      value: [
+        { value: 'a', env: 1 },
+        { value: 'a', env: 2 },
+        { value: 'a', env: 3 },
+        { value: 'a', env: 4 },
+        { value: 'a', env: 5 }
+      ]
+    }, 'user-determined env chaining')
+  t.end()
+})
+
 tape('desc', (t) => {
   const a = p.desc(p.string('a'), 'first letter of the alphabet')
   parseOk(t, a, 'a', 'a')
