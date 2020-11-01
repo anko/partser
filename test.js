@@ -707,6 +707,10 @@ tape('formatError', (t) => {
 // and capture its stdout.
 
 const run = (script, env) => {
+  // Merge the new env over existing process.env, so we keep environment
+  // variables already specified in the environment.
+  env = Object.assign({}, process.env, env)
+
   const scriptWithImport = `const p = require('.');\n${script}`
   return spawnSync('node',
     { input: scriptWithImport, encoding: 'utf-8', env })
