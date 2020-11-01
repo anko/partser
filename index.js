@@ -193,7 +193,7 @@ Partser.seq = (parsers, chainEnv = undefined) => {
       if (!result.status) return result
       else {
         if (chainEnv) {
-          env = chainEnv(result.value)
+          env = chainEnv(result.value, env)
         }
         accum[j] = result.value
         i = result.index
@@ -246,7 +246,7 @@ Partser.times = (parser, min, max, chainEnv = undefined) => {
         index = result.index
         successes.push(result.value)
         if (chainEnv) {
-          env = chainEnv(result.value)
+          env = chainEnv(result.value, env)
         }
       } else return mergedResult
     }
@@ -261,7 +261,7 @@ Partser.times = (parser, min, max, chainEnv = undefined) => {
         index = result.index
         successes.push(result.value)
         if (chainEnv) {
-          env = chainEnv(result.value)
+          env = chainEnv(result.value, env)
         }
       } else break
     }
