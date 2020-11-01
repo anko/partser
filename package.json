@@ -1,6 +1,6 @@
 {
   "name": "partser",
-  "version": "2.0.2",
+  "version": "3.0.0",
   "description": "parser library for extremely modular parsers",
   "keywords": [
     "parser",
