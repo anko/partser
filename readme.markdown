@@ -367,11 +367,10 @@ an Array of their results.
 > { status: true, index: 2, value: [ 'a', 'x' ] }
 > ```
 
-If `chainEnv` is given, it is called as a function, with the value of the
-previous successful parser in the sequence, and its return value is passed as
-the environment variable to the next parser.  This lets you pass an environment
-object forward through a sequence of parsers if you wish.  (If `chainEnv` is
-not given, the same environment is passed to all parsers.)
+
+The `chainEnv` argument can be passed a function to define how environments are
+passed forward through a sequence of parsers.  [See guidance
+below](#using-an-immutable-environment-object).
 
 #### `p.alt(parsers)`
 
@@ -415,11 +414,9 @@ If `max` is not given, `max = min`.
 > { status: true, index: 5, value: [ 'A', 'A', 'A', 'A', 'A' ] }
 > ```
 
-If `chainEnv` is given, it is called as a function, with the value of the
-previous successful parser in the sequence, and its return value is passed as
-the environment variable to the next parser.  This lets you pass an environment
-object forward through a sequence of parsers if you wish.  (If `chainEnv` is
-not given, the same environment is passed to all parsers.)
+The `chainEnv` argument can be passed a function to define how environments are
+passed forward through a sequence of parsers.  [See guidance
+below](#using-an-immutable-environment-object).
 
 #### `p.except(allowedParser, forbiddenParser)`
 
@@ -860,65 +857,141 @@ formatter, so you can have nice things like coloured output, and more context.
 
 ## Tips and patterns
 
- - Trying to make a recursive parser, or want to pass a not-yet-defined parser
-   to a combinator, and getting a `ReferenceError`?  You can use
-   [`p.from`](#pfromdecideparserfunction) to load it during parsing instead.
+### Recursive parsers
 
-   <!-- !test in using from to load later -->
+Trying to make a recursive parser, or want to pass a not-yet-defined parser
+to a combinator, and getting a `ReferenceError`?  You can use
+[`p.from`](#pfromdecideparserfunction) to load it during parsing instead.
 
-   ```js
-   // If we tried to pass `word` directly, we'd get an error like
-   //
-   //     ReferenceError: Cannot access 'word' before initialization
-   //
-   const exclamation = p.seq([p.from(() => word), p.string('!')])
+<!-- !test in using from to load later -->
 
-   const word = p.regex(/\w+/)
+```js
+// If we tried to pass `word` directly, we'd get an error like
+//
+//     ReferenceError: Cannot access 'word' before initialization
+//
+const exclamation = p.seq([p.from(() => word), p.string('!')])
 
-   console.log(exclamation('Hi!'))
-   ```
+const word = p.regex(/\w+/)
 
-   <!-- !test out using from to load later -->
+console.log(exclamation('Hi!'))
+```
 
-   > ```
-   > { status: true, index: 3, value: [ 'Hi', '!' ] }
-   > ```
+<!-- !test out using from to load later -->
 
- - It is frequently useful to create your own helper functions, to make your
-   implementation neater.
+> ```
+> { status: true, index: 3, value: [ 'Hi', '!' ] }
+> ```
 
-   <!-- !test in helpers -->
+### Make your own helper functions
 
-   ```js
-   const node = (name, parser) => {
-     return p.map(
-       p.lcMark(parser),
-       (result) => Object.assign({ name }, result))
-   }
+It is frequently useful to create your own helper functions, to make your
+implementation neater.
 
-   const word = node('word', p.regex(/\w+/))
-   const number = node('number', p.regex(/\d+/))
+<!-- !test in helpers -->
 
-   console.log(word('Hi').value)
-   console.log(number('42').value)
-   ```
+```js
+const node = (name, parser) => {
+  return p.map(
+    p.lcMark(parser),
+    (result) => Object.assign({ name }, result))
+}
 
-   <!-- !test out helpers -->
+const word = node('word', p.regex(/\w+/))
+const number = node('number', p.regex(/\d+/))
 
-   > ```
-   > {
-   >   name: 'word',
-   >   start: { offset: 0, line: 1, column: 1 },
-   >   value: 'Hi',
-   >   end: { offset: 2, line: 1, column: 3 }
-   > }
-   > {
-   >   name: 'number',
-   >   start: { offset: 0, line: 1, column: 1 },
-   >   value: '42',
-   >   end: { offset: 2, line: 1, column: 3 }
-   > }
-   > ```
+console.log(word('Hi').value)
+console.log(number('42').value)
+```
+
+<!-- !test out helpers -->
+
+> ```
+> {
+>   name: 'word',
+>   start: { offset: 0, line: 1, column: 1 },
+>   value: 'Hi',
+>   end: { offset: 2, line: 1, column: 3 }
+> }
+> {
+>   name: 'number',
+>   start: { offset: 0, line: 1, column: 1 },
+>   value: '42',
+>   end: { offset: 2, line: 1, column: 3 }
+> }
+> ```
+
+### Using an immutable environment object
+
+Instead of directly assigning to your parse environment object, you may be able
+to avoid bugs in complex implementations by treating your parse environment as
+_immutable_.  When parsers want to change the environment, they would create a
+new environment in which to make changes using `p.subEnv`.
+
+However, `p.subEnv` is not enough in situations where you want to pass an
+extended environment object forward through a sequence of parsers in `p.seq` or
+`p.times`.
+
+If you want to do this, just have your parser pass back the new environment
+object as part of the parse result, and pass the `chainEnv` argument to `p.seq`
+or `p.times`, to define how to extract from the previous parser's result the
+environment object to use for the next parser.
+
+The `chainEnv` argument should be a function.  It is called with 2 parameters:
+
+ - `value`; a successful result of the sequenced parser, and
+ - `env`; the environment object as it is currently.
+
+Your `chainEnv` function should return whatever should be passed as the
+environment object to the next parser in the sequence.
+
+Here's an example, for parsing a sequence of comma-separated consecutive
+integers:
+
+<!-- !test in chainEnv -->
+
+```js
+const nextNumberParser = p.from(env => {
+  const parser = p.map(
+    p.seq([
+      p.string(env.nextNumber.toString()),
+      p.alt([p.string(','), p.eof])
+    ]),
+    ([number, _]) => number)
+
+  return p.map(
+    parser,
+    (result, env) => {
+      // Construct new env, rather than mutating the existing one.
+      return { result, nextEnv: { nextNumber: env.nextNumber + 1 } }
+    })
+})
+
+const manyNumbers = p.times(
+  nextNumberParser, 0, Infinity,
+  // This is the chainEnv argument
+  (numberResult, previousEnv) => {
+    if (numberResult.nextEnv) return numberResult.nextEnv
+    else return previousEnv
+  })
+
+const env = { nextNumber: 0 }
+console.log(manyNumbers('0,1,2', env))
+```
+
+<!-- !test out chainEnv -->
+
+> ```
+> {
+>   status: true,
+>   index: 5,
+>   value: [
+>     { result: '0', nextEnv: { nextNumber: 1 } },
+>     { result: '1', nextEnv: { nextNumber: 2 } },
+>     { result: '2', nextEnv: { nextNumber: 3 } }
+>   ]
+> }
+> ```
 
 ## Limitations
 
