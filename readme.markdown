@@ -721,9 +721,8 @@ information programmatically, create your own debug handler.
 
 #### `p.debug.makeHandler([options:Object])`
 
-Creates a debug handler with `enter` and `exit` Function properties, suitable
-for passing to `p.debug` as the `debugHandler` argument.  It works just like
-the default, but with configurable `options`:
+Creates a debug handler similar to the default, but with configurable
+`options`:
 
  - `context:Number`: Number of chars of input to show at the left for context
    (default: `10`)
@@ -781,6 +780,10 @@ a          1,1 from OKAY "a" (len 1)
 a          ← true
 { status: true, index: 1, value: 'a' }
 ```
+
+If you want a completely different format, you can also create a custom handler
+(an object with `enter` and `exit` functions).  See `p.debug` for a description
+of the API.
 
 #### `p.replace(targetParser, sourceParser)`
 
