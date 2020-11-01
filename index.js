@@ -533,7 +533,8 @@ Partser.debug.makeHandler = (options = {}) => {
         !padIfShort && context > input.length ? input.length : context
 
       const userData = userDefinedEnter
-        ? userDefinedEnter(parser, input, index, env) : undefined
+        ? userDefinedEnter(parser, input, index, env)
+        : undefined
 
       if (userData !== false) {
         const { line, column } = lineAndColumnOfOffset(input, index)
@@ -557,7 +558,8 @@ Partser.debug.makeHandler = (options = {}) => {
         !padIfShort && context > input.length ? input.length : context
 
       const userData = userDefinedExit
-        ? userDefinedExit(parser, input, index, env, result) : undefined
+        ? userDefinedExit(parser, input, index, env, result)
+        : undefined
 
       if (userData === false) { return }
 

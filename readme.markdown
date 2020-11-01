@@ -17,25 +17,25 @@ that it should use from the environment object passed by the caller:
 <!-- !test in motivating example -->
 
 ``` js
-var p = require('partser')
+const p = require('partser')
 
 // Let's parse a string!
 
 // For fun, let's load the quote character from the parse environment.
-var quote = p.from((env) => env.quoteParser)
+const quote = p.from((env) => env.quoteParser)
 
 // The string can contain any characters that aren't quotes.
-var stringChar = p.except(p.any, quote)
+const stringChar = p.except(p.any, quote)
 
 // The contents of a string (the stuff between quotes) shall be many
 // stringChars, joined together.
-var stringContents = p.map(
+const stringContents = p.map(
   p.times(stringChar, 0, Infinity),
   (chars) => chars.join(''))
 
 // A string is a quote, string contents, then another quote.
 // We'll pick out just the content part, and return that.
-var stringParser = p.map(
+const stringParser = p.map(
   p.seq([quote, stringContents, quote]),
   ([openingQuote, contents, closingQuote]) => contents)
 
