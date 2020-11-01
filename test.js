@@ -724,7 +724,8 @@ tape('debug', (t) => {
   }
   // Testing highlighting of EOF (appears as highlighted blank space after the input
   {
-    const { stdout } = run('p.debug(p.times(p.string(\'a\'), 0, Infinity))(\'a\')', { FORCE_COLOR: 1 })
+    const { stdout, stderr } = run('p.debug(p.times(p.string(\'a\'), 0, Infinity))(\'a\')', { FORCE_COLOR: 1 })
+    t.equals(stderr, '')
     t.equals(stdout, [
       `${colour.inverse('a')} 1,1 ${colour.blue('times(0,Infinity)')} ?`,
       `${colour.inverse('a')} ${colour.dim('· ')}1,1 ${colour.blue('string("a")')} ?`,
@@ -739,7 +740,8 @@ tape('debug', (t) => {
   // it's really tedious to write down and maintain, and obscures the intended
   // format otherwise.
   {
-    const { stdout } = run('p.debug(p.times(p.alt(p.string(\'a\'), p.string(\'b\')), 3))(\'abc\')')
+    const { stdout, stderr } = run('p.debug(p.times(p.alt(p.string(\'a\'), p.string(\'b\')), 3))(\'abc\')')
+    t.equals(stderr, '')
     t.equals(stdout, [
       'abc 1,1 times(3,3) ?',
       'abc · 1,1 alt(*2) ?',
