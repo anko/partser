@@ -23,7 +23,7 @@
     "nyc": "^15.1.0",
     "standard": "^14.3.4",
     "tape": "^5.0.1",
-    "txm": "^7.4.1"
+    "txm": "^7.4.4"
   },
   "dependencies": {
     "ansi-colors": "^4.1.1",
