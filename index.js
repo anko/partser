@@ -308,7 +308,7 @@ Partser.desc = (parser, expected) => {
   assertParser('desc', parser)
   assertString('desc', expected)
 
-  return Parser(`desc(${JSON.stringify(expected)}, ${parser})`, (input, i, env, debugHandler) => {
+  return Parser(`desc(${JSON.stringify(expected)}, ${parser.name})`, (input, i, env, debugHandler) => {
     let result = parser.behaviour(input, i, env, debugHandler)
     if (!result.status) {
       // Defensive programming:  Make a copy of the result object before
