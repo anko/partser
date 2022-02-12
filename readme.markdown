@@ -370,7 +370,8 @@ an Array of their results.
 
 The `chainEnv` argument can be passed a function to define how environments are
 passed forward through a sequence of parsers.  [See guidance
-below](#using-an-immutable-environment-object).
+below](#passing-the-environment-through-a-parser-sequence).
+
 
 #### `p.alt(parsers)`
 
@@ -416,7 +417,7 @@ If `max` is not given, `max = min`.
 
 The `chainEnv` argument can be passed a function to define how environments are
 passed forward through a sequence of parsers.  [See guidance
-below](#using-an-immutable-environment-object).
+below](#passing-the-environment-through-a-parser-sequence).
 
 #### `p.except(allowedParser, forbiddenParser)`
 
@@ -921,26 +922,22 @@ console.log(number('42').value)
 > }
 > ```
 
-### Using an immutable environment object
+### Passing the environment through a parser sequence
 
-Instead of directly assigning to your parse environment object, you may be able
-to avoid bugs in complex implementations by treating your parse environment as
-_immutable_.  When parsers want to change the environment, they would create a
-new environment in which to make changes using `p.subEnv`.
+By default, the same environment given to `p.seq`/`p.times` will be passed to
+each sequenced parser.
 
-However, `p.subEnv` is not enough in situations where you want to pass an
-extended environment object forward through a sequence of parsers in `p.seq` or
-`p.times`.
+When using sub-environments (`p.subEnv`), you may want some `p.seq`/`p.times`
+parsers to pass the repeated parser's modified sub-environment forward from
+each iteration to the next.  You can do this with the optional `chainEnv`
+argument.
 
-If you want to do this, just have your parser pass back the new environment
-object as part of the parse result, and pass the `chainEnv` argument to `p.seq`
-or `p.times`, to define how to extract from the previous parser's result the
-environment object to use for the next parser.
+The `chainEnv` argument should be a function.  It will be called with 2
+parameters:
 
-The `chainEnv` argument should be a function.  It is called with 2 parameters:
-
- - `value`; a successful result of the sequenced parser, and
- - `env`; the environment object as it is currently.
+ - `value`: A successful result of the previous parser.
+ - `env`: The previous environment object (whatever the environment passed to
+   the previous parser was as it returned).
 
 Your `chainEnv` function should return whatever should be passed as the
 environment object to the next parser in the sequence.
